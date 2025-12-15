@@ -2,27 +2,24 @@
 
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { GoogleIcon } from "@/components/icons/google-icon";
+import { EyeIcon, EyeOffIcon } from "@/components/icons/eye-icon";
 
 export function SignUpForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [repeatPassword, setRepeatPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -33,8 +30,8 @@ export function SignUpForm({
     setIsLoading(true);
     setError(null);
 
-    if (password !== repeatPassword) {
-      setError("Passwords do not match");
+    if (!agreeToTerms) {
+      setError("Please agree to the Terms of use and Privacy Policy");
       setIsLoading(false);
       return;
     }
@@ -45,6 +42,10 @@ export function SignUpForm({
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/protected`,
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          },
         },
       });
       if (error) throw error;
@@ -56,65 +57,171 @@ export function SignUpForm({
     }
   };
 
+  const handleGoogleSignUp = async () => {
+    const supabase = createClient();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/protected`,
+        },
+      });
+      if (error) throw error;
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "An error occurred");
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignUp}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+    <div
+      className={cn(
+        "w-[435px] min-h-[620px] rounded-[20px] border border-[#EDEDED] bg-white px-[36px] py-[46px] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] flex flex-col",
+        className
+      )}
+      {...props}
+    >
+      <div className="flex flex-col gap-[32px] items-center w-full">
+        {/* Header */}
+        <div className="flex flex-col gap-3 items-center text-center">
+          <h1 className="text-2xl font-semibold text-[#212121] leading-tight tracking-[0.24px]">
+            Welcome to Neuro Medica
+          </h1>
+          <p className="text-sm font-normal text-[#6B6C6E] leading-[1.15]">
+            Enter your credentials to access your account.
+          </p>
+        </div>
+
+        {/* Form */}
+        <form
+          onSubmit={handleSignUp}
+          className="flex flex-col gap-[22px] items-center w-[300px]"
+        >
+          <div className="flex flex-col gap-4 items-start w-full">
+            <div className="flex flex-col gap-6 items-start w-full">
+              {/* Google Sign Up Button */}
+              <button
+                type="button"
+                onClick={handleGoogleSignUp}
+                disabled={isLoading}
+                className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] bg-white flex items-center justify-center gap-2 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                <GoogleIcon className="w-4 h-4" />
+                <span className="text-sm font-normal text-[#212121]">
+                  Sign up with Google
+                </span>
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 w-full">
+                <span className="h-px flex-1 bg-[rgba(107,108,110,0.15)]" />
+                <span className="text-xs font-medium text-[#212121] lowercase">
+                  or
+                </span>
+                <span className="h-px flex-1 bg-[rgba(107,108,110,0.15)]" />
               </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+
+              {/* Form Fields */}
+              <div className="flex flex-col gap-4 items-start w-full">
+                <div className="flex flex-col gap-2 items-start w-full">
+                  <Input
+                    type="text"
+                    placeholder="First name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                    className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] bg-white px-3 text-[13px] font-normal text-[#212121] placeholder:text-[#8D8D8D] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E55A2A]"
+                  />
+                  <Input
+                    type="text"
+                    placeholder="Last Name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                    className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] bg-white px-3 text-[13px] font-normal text-[#212121] placeholder:text-[#8D8D8D] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E55A2A]"
+                  />
+                  <Input
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] bg-white px-3 text-[13px] font-normal text-[#212121] placeholder:text-[#8D8D8D] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E55A2A]"
+                  />
+                  <div className="relative w-full">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] bg-white px-3 pr-10 text-[13px] font-normal text-[#212121] placeholder:text-[#8D8D8D] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E55A2A]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8D8D8D] hover:text-[#212121] transition-colors"
+                    >
+                      {showPassword ? (
+                        <EyeOffIcon className="w-4 h-4" />
+                      ) : (
+                        <EyeIcon className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
+
+                {/* Terms Checkbox */}
+                <div className="flex items-start gap-2 w-full">
+                  <Checkbox
+                    id="terms"
+                    checked={agreeToTerms}
+                    onCheckedChange={(checked) =>
+                      setAgreeToTerms(checked === true)
+                    }
+                    className="rounded-[6px] border border-[#EDEDED] data-[state=checked]:bg-[#F76B15] data-[state=checked]:border-[#F76B15] w-3 h-3 mt-0.5"
+                  />
+                  <label
+                    htmlFor="terms"
+                    className="text-xs font-normal text-[#212121] leading-[1.6] cursor-pointer flex-1"
+                  >
+                    By creating an account, I agree to our Terms of use and
+                    Privacy Policy
+                  </label>
                 </div>
-                <Input
-                  id="repeat-password"
-                  type="password"
-                  required
-                  value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
-                />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating an account..." : "Sign up"}
-              </Button>
+
+              {error && (
+                <p className="text-xs text-red-500 w-full">{error}</p>
+              )}
+
+              {/* Continue Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="h-[40px] w-full rounded-[16px] text-sm font-normal text-white shadow-[0px_1.43px_3.06px_0px_rgba(0,0,0,0.04),0px_5.72px_5.72px_0px_rgba(0,0,0,0.03),0px_12.87px_7.76px_0px_rgba(0,0,0,0.02),0px_22.67px_9.19px_0px_rgba(0,0,0,0.01)] hover:brightness-110 disabled:opacity-50 transition-all relative overflow-hidden"
+                style={{
+                  background:
+                    "linear-gradient(180deg, #FFA8C8 7%, #F58947 70%, #F47325 88%, #FF4F34 100%)",
+                }}
+              >
+                <span className="relative z-10">
+                  {isLoading ? "Creating account..." : "Continue"}
+                </span>
+                <div className="absolute inset-0 pointer-events-none shadow-[inset_0px_0px_8.4px_4.2px_rgba(255,255,255,0.4),inset_0px_4px_3px_0px_rgba(255,255,255,0.28)]" />
+              </button>
             </div>
-            <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <Link href="/auth/login" className="underline underline-offset-4">
-                Login
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+
+            {/* Footer */}
+            <p className="text-[13px] font-normal text-[#BBBBBB] text-center leading-[1.15] w-full">
+              Crafted with ❤️ by Neuro Medica
+            </p>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

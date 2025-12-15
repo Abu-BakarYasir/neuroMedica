@@ -10,7 +10,33 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
       colors: {
+        // Neuro Medica Custom Colors
+        neuro: {
+          primary: "#E55A2A",
+          "primary-light": "#F07A4A",
+          "primary-dark": "#C44A1A",
+          "primary-lighter": "#F5A07A",
+          "primary-darker": "#A03A15",
+          secondary: "hsl(var(--neuro-secondary))",
+          accent: "hsl(var(--neuro-accent))",
+        },
+        // Brand colors for easy access
+        brand: {
+          50: '#FEF7F3',
+          100: '#FEEEE6',
+          200: '#FDD9C7',
+          300: '#FBC4A8',
+          400: '#F8A089',
+          500: '#E55A2A',
+          600: '#C44A1A',
+          700: '#A03A15',
+          800: '#7C2D10',
+          900: '#58200B',
+        },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -40,6 +66,14 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          bg: "hsl(var(--success-bg))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          bg: "hsl(var(--warning-bg))",
         },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
