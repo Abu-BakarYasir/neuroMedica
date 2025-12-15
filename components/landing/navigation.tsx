@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
@@ -10,7 +11,6 @@ const navLinks = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
   { label: "Use Cases", href: "#use-cases" },
-  { label: "Technology", href: "#technology" },
   { label: "About", href: "#about" },
 ];
 
@@ -100,13 +100,18 @@ export function Navigation() {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden pb-4 border-t border-[#EDEDED] mt-2 pt-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden pb-4 border-t border-[#EDEDED] mt-2 pt-4"
+          >
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
                 <button
                   key={link.href}
                   onClick={() => handleNavClick(link.href)}
-                  className="text-sm font-normal text-[#525252] hover:text-neuro-primary transition-colors text-left"
+                  className="text-sm font-normal text-[#525252] hover:text-neuro-primary transition-colors text-left py-1"
                 >
                   {link.label}
                 </button>
@@ -130,7 +135,7 @@ export function Navigation() {
                 </Link>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
     </nav>

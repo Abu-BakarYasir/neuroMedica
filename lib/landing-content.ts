@@ -4,7 +4,7 @@
 export const heroContent = {
   headline: "Explainable AI for Medical Education",
   subheadline: "A unified platform integrating medical imaging analysis, ECG interpretation, reference-grounded Q&A, and structured report generation—designed for learning, not diagnosis.",
-  disclaimer: "⚠️ Educational Use Only • Not for Clinical Decision-Making",
+  disclaimer: "Educational Use Only • Not for Clinical Decision-Making",
   primaryCta: "Get Started",
   secondaryCta: "Learn More",
 };
@@ -19,10 +19,6 @@ export const problemSolutionContent = {
     {
       title: "Black-Box Predictions",
       description: "Traditional AI systems provide predictions without explanations, making it difficult to understand reasoning and build clinical intuition.",
-    },
-    {
-      title: "Hallucination Risks",
-      description: "AI-generated content may contain inaccuracies or fabricated citations, undermining trust and educational value.",
     },
   ],
   solution: {
@@ -44,42 +40,36 @@ export const capabilitiesContent = [
     title: "Chest X-ray Intelligence",
     description: "Multi-label classification with calibrated confidence scores and Grad-CAM visualizations to understand model attention.",
     learningValue: "Learn to interpret chest X-rays with AI assistance, understanding both predictions and the reasoning behind them.",
-    icon: "🫁",
   },
   {
     id: "ecg-analysis",
     title: "ECG Signal Analysis",
     description: "CSV-based signal processing for rhythm detection, interval analysis, and abnormality flagging with visual plots.",
     learningValue: "Practice ECG interpretation with AI-powered signal analysis and visual feedback on cardiac rhythms.",
-    icon: "📈",
   },
   {
     id: "rag-qa",
     title: "Reference-Grounded Q&A",
     description: "Biomedical literature retrieval with citation-backed answers, reducing hallucinations through RAG architecture.",
     learningValue: "Access evidence-based medical knowledge with proper citations, building research skills and critical thinking.",
-    icon: "📚",
   },
   {
     id: "medical-ocr",
     title: "Medical OCR",
     description: "Extract structured data from scanned prescriptions and handwritten clinical notes using advanced OCR and NLP.",
     learningValue: "Understand how to digitize and structure medical documents, preparing for modern clinical workflows.",
-    icon: "📄",
   },
   {
     id: "symptom-explorer",
     title: "Symptom-to-Disease Explorer",
     description: "NLP-based symptom extraction with ontology mapping (ICD-10/SNOMED) for educational prescription drafting.",
     learningValue: "Learn systematic approaches to symptom analysis and differential diagnosis with structured medical ontologies.",
-    icon: "🔍",
   },
   {
     id: "report-generator",
     title: "Unified Report Generator",
     description: "Merge outputs from all modules into editable, structured reports with citation support and PDF export.",
     learningValue: "Practice creating comprehensive medical reports that integrate multiple data sources with proper documentation.",
-    icon: "📋",
   },
 ];
 
@@ -106,60 +96,6 @@ export const howItWorksContent = {
       step: 4,
       title: "Reports",
       description: "Generate structured, editable reports with visual explanations, citations, and export options.",
-    },
-  ],
-};
-
-export const explainabilityTrustContent = {
-  title: "Explainability & Trust",
-  subtitle: "Transparency at every step",
-  features: [
-    {
-      title: "Visual Explanations",
-      description: "Grad-CAM heatmaps show which regions of medical images the AI focuses on, helping you understand model reasoning.",
-      icon: "👁️",
-    },
-    {
-      title: "Confidence Scores",
-      description: "Every prediction includes calibrated confidence scores and uncertainty estimates, so you know when to trust the output.",
-      icon: "📊",
-    },
-    {
-      title: "Citations & References",
-      description: "All answers are backed by retrievable biomedical literature citations, enabling verification and further learning.",
-      icon: "🔗",
-    },
-    {
-      title: "Human-in-the-Loop",
-      description: "Edit, validate, and refine AI-generated reports before finalizing—you remain in control of the learning process.",
-      icon: "✏️",
-    },
-  ],
-};
-
-export const targetAudienceContent = {
-  title: "Who It's For",
-  subtitle: "Designed for medical education and research",
-  personas: [
-    {
-      title: "Medical Students",
-      description: "Learn to interpret medical images and ECGs with AI assistance. Understand model reasoning through visual explanations and build clinical intuition.",
-      icon: "🎓",
-    },
-    {
-      title: "Interns & House Officers",
-      description: "Practice structured report generation and evidence-based decision-making. Use AI as a learning tool to refine clinical documentation skills.",
-      icon: "👨‍⚕️",
-    },
-    {
-      title: "Clinical Educators",
-      description: "Use explainable AI outputs as teaching tools. Demonstrate how AI reasoning aligns with clinical knowledge and where it differs.",
-      icon: "👩‍🏫",
-    },
-    {
-      title: "Health-AI Researchers",
-      description: "Explore explainable AI architectures, evaluate model interpretability, and study human-AI interaction in medical contexts.",
-      icon: "🔬",
     },
   ],
 };
@@ -193,126 +129,60 @@ export const useCasesContent = {
       ],
       outcome: "Intern practices systematic ECG interpretation with AI assistance, learning to identify patterns and abnormalities.",
     },
-    {
-      title: "OCR + Report Drafting Case",
-      scenario: "A student digitizes handwritten clinical notes and creates a structured report.",
-      steps: [
-        "Upload scanned prescription or handwritten notes",
-        "OCR extracts structured data (medications, dosages, dates)",
-        "Symptom-to-disease explorer suggests relevant conditions",
-        "RAG Q&A provides evidence-based information",
-        "Unified report generator combines all outputs",
-        "Student edits and refines the report before export",
-      ],
-      outcome: "Student learns modern clinical documentation workflows and how to integrate multiple data sources.",
-    },
   ],
 };
 
-export const reportPreviewContent = {
-  title: "Structured Report Generation",
-  subtitle: "Professional, editable, citation-backed reports",
-  features: [
-    "Editable sections for all findings",
-    "Automatic citation insertion",
-    "Visual explanations embedded",
-    "Confidence scores displayed",
-    "PDF export with references",
-    "Template customization",
-  ],
-  sampleSections: [
-    "Patient Information",
-    "Clinical History",
-    "Imaging Findings",
-    "ECG Analysis",
-    "Differential Diagnosis",
-    "Recommendations",
-    "References",
-  ],
-};
+export const statsContent = [
+  {
+    value: 500,
+    suffix: "+",
+    label: "Active Users",
+  },
+  {
+    value: 10000,
+    suffix: "+",
+    label: "Analyses Completed",
+  },
+  {
+    value: 95,
+    suffix: "%",
+    label: "Accuracy Rate",
+  },
+  {
+    value: 50,
+    suffix: "+",
+    label: "Medical Institutions",
+  },
+];
 
-export const ethicsPrivacyContent = {
-  title: "Ethics, Privacy & Safety",
-  subtitle: "Responsible AI for medical education",
-  points: [
+export const socialProofContent = {
+  testimonials: [
     {
-      title: "Educational Use Only",
-      description: "This platform is strictly for educational purposes. It is not intended for clinical decision-making or patient diagnosis.",
-      icon: "⚠️",
+      quote:
+        "Neuro Medica has transformed how I study medical imaging. The visual explanations help me understand not just what the AI sees, but why—which is crucial for building clinical intuition.",
+      name: "Sarah Chen",
+      role: "Medical Student, Year 3",
     },
     {
-      title: "No Medical Advice",
-      description: "All outputs are educational tools. They do not constitute medical advice, diagnosis, or treatment recommendations.",
-      icon: "🚫",
+      quote:
+        "As a clinical educator, I use Neuro Medica to demonstrate AI reasoning to my students. The explainability features make it an excellent teaching tool.",
+      name: "Dr. Michael Rodriguez",
+      role: "Clinical Educator",
     },
     {
-      title: "Data Privacy",
-      description: "User data is handled with care. No patient data is stored permanently. Uploads are processed securely and can be deleted.",
-      icon: "🔒",
+      quote:
+        "The citation-backed Q&A feature is a game-changer. I can trust the answers because I can verify every source, which builds my research skills.",
+      name: "James Park",
+      role: "Medical Student, Year 2",
     },
     {
-      title: "Hallucination Mitigation",
-      description: "RAG architecture and citation verification reduce AI hallucinations. All answers include source references for verification.",
-      icon: "✅",
-    },
-    {
-      title: "Bias Awareness",
-      description: "We acknowledge potential biases in training data and model outputs. Users are encouraged to critically evaluate all AI predictions.",
-      icon: "⚖️",
+      quote:
+        "The unified platform saves me hours. Instead of switching between multiple tools, everything I need is in one place with consistent explanations.",
+      name: "Emily Watson",
+      role: "Intern",
     },
   ],
-};
-
-export const technologyContent = {
-  title: "Technology & Research Credibility",
-  subtitle: "Built on modern, explainable AI architectures",
-  technologies: [
-    {
-      name: "Vision Models",
-      description: "CNNs and Vision Transformers for medical image analysis",
-    },
-    {
-      name: "Biomedical RAG",
-      description: "Retrieval-Augmented Generation with medical literature databases",
-    },
-    {
-      name: "Signal Processing",
-      description: "ML-based ECG signal analysis and rhythm detection",
-    },
-    {
-      name: "OCR & NLP",
-      description: "Advanced document processing and natural language understanding",
-    },
-    {
-      name: "Modern Web Architecture",
-      description: "Next.js, TypeScript, and scalable cloud infrastructure",
-    },
-  ],
-};
-
-export const roadmapContent = {
-  title: "Future Vision",
-  subtitle: "Continuous improvement and academic growth",
-  roadmap: [
-    {
-      phase: "Phase 1",
-      title: "Core Modules",
-      items: ["Chest X-ray analysis", "ECG processing", "RAG Q&A", "Report generation"],
-      status: "Current",
-    },
-    {
-      phase: "Phase 2",
-      title: "Enhanced Explainability",
-      items: ["Advanced visualization tools", "Interactive model exploration", "Comparative analysis"],
-      status: "Planned",
-    },
-    {
-      phase: "Phase 3",
-      title: "Extended Capabilities",
-      items: ["Additional imaging modalities", "Multi-modal analysis", "Collaborative features"],
-      status: "Future",
-    },
-  ],
+  trustBadges: ["Medical University", "Teaching Hospital", "Research Institute"],
 };
 
 export const finalCtaContent = {
@@ -327,6 +197,7 @@ export const footerContent = {
   links: [
     { label: "Privacy Policy", href: "#" },
     { label: "Terms of Service", href: "#" },
+    { label: "Ethics & Safety", href: "#" },
     { label: "About", href: "#" },
     { label: "Contact", href: "#" },
   ],

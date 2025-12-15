@@ -3,13 +3,9 @@ import { HeroSection } from "@/components/landing/hero-section";
 import { ProblemSolution } from "@/components/landing/problem-solution";
 import { CapabilitiesGrid } from "@/components/landing/capabilities-grid";
 import { HowItWorks } from "@/components/landing/how-it-works";
-import { ExplainabilityTrust } from "@/components/landing/explainability-trust";
-import { TargetAudience } from "@/components/landing/target-audience";
 import { UseCases } from "@/components/landing/use-cases";
-import { ReportPreview } from "@/components/landing/report-preview";
-import { EthicsPrivacy } from "@/components/landing/ethics-privacy";
-import { Technology } from "@/components/landing/technology";
-import { Roadmap } from "@/components/landing/roadmap";
+import { StatsSection } from "@/components/landing/stats-section";
+import { SocialProof } from "@/components/landing/social-proof";
 import { FinalCta } from "@/components/landing/final-cta";
 import { Footer } from "@/components/landing/footer";
 
@@ -21,13 +17,9 @@ export default function Home() {
       <ProblemSolution />
       <CapabilitiesGrid />
       <HowItWorks />
-      <ExplainabilityTrust />
-      <TargetAudience />
+      <StatsSection />
       <UseCases />
-      <ReportPreview />
-      <EthicsPrivacy />
-      <Technology />
-      <Roadmap />
+      <SocialProof />
       <FinalCta />
       <Footer />
     </main>

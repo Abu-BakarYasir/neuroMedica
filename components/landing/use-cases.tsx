@@ -7,14 +7,14 @@ import { CheckCircle2 } from "lucide-react";
 
 export function UseCases() {
   return (
-    <section id="use-cases" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+    <section id="use-cases" className="py-24 px-4 sm:px-6 lg:px-8 bg-[#F8F8F8]">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl font-semibold text-[#212121] mb-4">
             {useCasesContent.title}
@@ -24,7 +24,7 @@ export function UseCases() {
           </p>
         </motion.div>
 
-        <div className="space-y-8">
+        <div className="grid md:grid-cols-2 gap-8">
           {useCasesContent.cases.map((useCase, index) => (
             <motion.div
               key={index}
@@ -33,9 +33,9 @@ export function UseCases() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
             >
-              <Card className="border border-[#EDEDED] bg-white shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] rounded-[20px]">
+              <Card className="border border-[#EDEDED] bg-white shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] hover:shadow-xl transition-shadow rounded-[20px] h-full">
                 <CardHeader>
-                  <CardTitle className="text-2xl font-semibold text-[#212121] mb-2">
+                  <CardTitle className="text-xl font-semibold text-[#212121] mb-2">
                     {useCase.title}
                   </CardTitle>
                   <p className="text-sm font-medium text-neuro-primary">
@@ -54,7 +54,7 @@ export function UseCases() {
                           key={stepIndex}
                           className="flex items-start gap-3 text-sm text-[#525252]"
                         >
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-neuro-primary/10 text-neuro-primary font-semibold text-xs flex items-center justify-center mt-0.5">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-neuro-primary/20 to-neuro-primary/10 text-neuro-primary font-semibold text-xs flex items-center justify-center mt-0.5">
                             {stepIndex + 1}
                           </span>
                           <span className="flex-1 leading-relaxed">{step}</span>
@@ -66,7 +66,9 @@ export function UseCases() {
                   {/* Outcome */}
                   <div className="pt-4 border-t border-[#EDEDED]">
                     <div className="flex items-start gap-3">
-                      <CheckCircle2 className="text-success mt-0.5 flex-shrink-0" size={20} />
+                      <div className="w-6 h-6 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle2 className="text-success" size={16} />
+                      </div>
                       <div>
                         <h4 className="text-sm font-semibold text-[#212121] mb-1">
                           Learning Outcome:
