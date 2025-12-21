@@ -13,6 +13,7 @@ This document provides a comprehensive design system and style guide for buildin
 5. [Spacing and Structure](#5-spacing-and-structure)
 6. [Implementation Guide](#6-implementation-guide)
 7. [Component Library Specifications](#7-component-library-specifications)
+8. [Landing Page Design Patterns & Best Practices](#8-landing-page-design-patterns--best-practices)
 
 ---
 
@@ -1089,6 +1090,450 @@ export const colors = {
 - First name, last name, email, password inputs
 - Terms acceptance checkbox
 - Sign in link
+
+---
+
+## 8. Landing Page Design Patterns & Best Practices
+
+This section documents the design patterns, component structures, and best practices established for the Neuro Medica landing page. Use these guidelines when creating new landing pages or marketing pages.
+
+### Landing Page Structure
+
+**Optimal Section Count**: 7-8 focused sections maximum
+- Too many sections create cognitive overload and reduce conversion
+- Each section should have a clear purpose and value proposition
+- Maintain visual hierarchy with alternating background colors
+
+**Standard Section Order**:
+1. Navigation (sticky header)
+2. Hero Section
+3. Problem/Solution
+4. Features/Capabilities
+5. How It Works
+6. Stats/Social Proof
+7. Use Cases
+8. Final CTA
+9. Footer
+
+### Section Spacing Standards
+
+**Vertical Padding**:
+- Standard sections: `py-24` (96px / 6rem)
+- Hero section: `min-h-screen` with centered content
+- Footer: `py-16` (64px / 4rem)
+
+**Horizontal Padding**:
+- Standard: `px-4 sm:px-6 lg:px-8`
+- Max width container: `max-w-7xl mx-auto` (most sections)
+- Hero: `max-w-6xl` or `max-w-4xl` for centered content
+
+**Section Margins**:
+- Between sections: Natural flow (no extra margin needed)
+- Content spacing: `mb-16` (64px) for section headers
+
+### Background Color Alternation
+
+**Pattern**:
+- Hero: White or gradient background
+- Problem/Solution: `bg-[#F8F8F8]`
+- Features: `bg-white`
+- How It Works: `bg-white`
+- Stats: `bg-gradient-to-b from-white to-[#F8F8F8]`
+- Use Cases: `bg-[#F8F8F8]`
+- Social Proof: `bg-white`
+- Final CTA: `bg-gradient-to-b from-white via-neuro-primary/5 to-[#F8F8F8]`
+- Footer: `bg-white`
+
+**Purpose**: Creates visual rhythm and helps users distinguish between sections
+
+### Component Patterns
+
+#### Hero Section Pattern
+
+**Structure**:
+- Two-column layout on desktop (content left, visual right)
+- Centered single column on mobile
+- Trust indicators below headline
+- Primary and secondary CTAs
+- Animated gradient background overlay
+
+**Key Elements**:
+- Headline: `text-4xl sm:text-5xl lg:text-6xl font-semibold`
+- Subheadline: `text-lg sm:text-xl`
+- Trust badges: User count, ratings, or trust indicators
+- CTA buttons: Primary gradient button + secondary outline button
+
+**Implementation Example**:
+```tsx
+<section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-20">
+  <div className="grid lg:grid-cols-2 gap-12 items-center">
+    {/* Content Column */}
+    {/* Visual Column */}
+  </div>
+</section>
+```
+
+#### Stats Section Pattern
+
+**Purpose**: Display key metrics with animated counters
+
+**Structure**:
+- Grid layout: `grid-cols-2 md:grid-cols-4`
+- Each stat card contains:
+  - Icon in colored background circle
+  - Animated counter number
+  - Label text
+
+**Animation**:
+- Counters animate on scroll into view
+- Use `useInView` hook from framer-motion
+- 2-second animation duration
+- Smooth increment effect
+
+**Card Design**:
+- Background: White with border
+- Icon container: `w-16 h-16 rounded-[16px] bg-gradient-to-br from-neuro-primary/10 to-neuro-primary/5`
+- Number: `text-4xl sm:text-5xl font-semibold`
+- Label: `text-sm text-[#525252]`
+
+#### Social Proof Section Pattern
+
+**Structure**:
+- Testimonials carousel with navigation dots
+- Trust badges/logos (optional)
+- Star ratings display
+
+**Testimonial Card**:
+- Quote text: `text-lg text-[#525252]`
+- Author name: `font-semibold text-[#212121]`
+- Author role: `text-sm text-[#8D8D8D]`
+- Star rating: 5 stars with `#DFAD0C` color
+
+**Carousel Navigation**:
+- Dots: `w-2 h-2 rounded-full`
+- Active dot: `bg-neuro-primary w-8`
+- Inactive dot: `bg-[#EDEDED]`
+
+#### Feature/Capability Grid Pattern
+
+**Grid Layout**:
+- Desktop: `lg:grid-cols-3`
+- Tablet: `md:grid-cols-2`
+- Mobile: Single column
+
+**Card Structure**:
+- Icon in colored container (top)
+- Title (semibold)
+- Description text
+- Learning value section (bottom border)
+
+**Hover Effects**:
+- Shadow increase: `hover:shadow-xl`
+- Border highlight: `hover:border-neuro-primary/20`
+- Smooth transition: `transition-all duration-300`
+
+**Icon Usage**:
+- Use lucide-react icons (not emojis)
+- Icon size: `24px` or `32px`
+- Icon container: `w-12 h-12 rounded-[12px] bg-gradient-to-br from-neuro-primary/10 to-neuro-primary/5`
+
+#### How It Works Pattern
+
+**Structure**:
+- 4 steps in horizontal flow
+- Connecting lines/arrows between steps
+- Step number badge
+- Icon for each step
+- Title and description
+
+**Visual Flow**:
+- Horizontal connecting line: `bg-gradient-to-r from-neuro-primary/10 via-neuro-primary/20 to-neuro-primary/10`
+- Arrow connectors: CSS triangles pointing right
+- Hidden on mobile, visible on desktop
+
+**Step Card**:
+- Centered content alignment
+- Step badge: `w-14 h-14 rounded-full bg-gradient-to-br from-neuro-primary to-neuro-primary-dark`
+- Icon container: `w-20 h-20 rounded-[16px]`
+
+#### Use Cases Pattern
+
+**Layout**:
+- Grid: `md:grid-cols-2` (2 cases side by side)
+- Each case card contains:
+  - Title and scenario
+  - Numbered step list
+  - Learning outcome section
+
+**Step List**:
+- Numbered badges: `w-7 h-7 rounded-full bg-gradient-to-br from-neuro-primary/20 to-neuro-primary/10`
+- Step text: `text-sm text-[#525252]`
+- Spacing: `space-y-2` between steps
+
+**Outcome Section**:
+- Border top separator
+- Success icon: `w-6 h-6 rounded-full bg-green-50`
+- CheckCircle2 icon from lucide-react
+
+### Animation Guidelines
+
+#### Scroll Animations
+
+**Standard Pattern**:
+```tsx
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  viewport={{ once: true }}
+  transition={{ duration: 0.6 }}
+>
+```
+
+**Staggered Animations**:
+- For lists/grids: `delay: index * 0.1`
+- Creates cascading effect
+- Prevents overwhelming users
+
+**Animation Timing**:
+- Standard: `duration: 0.6`
+- Fast: `duration: 0.3`
+- Slow: `duration: 0.8`
+
+#### Micro-interactions
+
+**Hover States**:
+- Buttons: `hover:brightness-110`
+- Cards: `hover:shadow-xl hover:border-neuro-primary/20`
+- Links: `hover:text-neuro-primary`
+- Transitions: `transition-all duration-300`
+
+**Button Animations**:
+- Primary buttons: Gradient background with shadow
+- Hover: Brightness increase
+- Active: Slight scale down (optional)
+
+### Typography Hierarchy
+
+**Section Headers**:
+- Main title: `text-3xl sm:text-4xl font-semibold text-[#212121] mb-4`
+- Subtitle: `text-lg text-[#525252] max-w-2xl mx-auto`
+- Spacing: `mb-16` after header
+
+**Card Titles**:
+- Large cards: `text-xl font-semibold`
+- Medium cards: `text-lg font-semibold`
+- Small cards: `text-base font-semibold`
+
+**Body Text**:
+- Primary: `text-sm text-[#525252] leading-relaxed`
+- Secondary: `text-xs text-[#8D8D8D]`
+- Line height: `leading-relaxed` for readability
+
+### Icon Usage Standards
+
+**Icon Library**: lucide-react (not emojis)
+
+**Sizing**:
+- Small: `size={16}` or `size={18}`
+- Medium: `size={20}` or `size={24}`
+- Large: `size={32}` or `size={36}`
+
+**Color**:
+- Primary: `text-neuro-primary`
+- Secondary: `text-[#525252]`
+- Muted: `text-[#8D8D8D]`
+- Success: `text-success`
+- Warning: `text-[#DFAD0C]`
+
+**Container Backgrounds**:
+- Light: `bg-gradient-to-br from-neuro-primary/10 to-neuro-primary/5`
+- Medium: `bg-[#FEF7F3]`
+- Dark: `bg-neuro-primary/20`
+
+### Card Design Standards
+
+**Standard Card**:
+- Border: `border border-[#EDEDED]`
+- Background: `bg-white`
+- Border radius: `rounded-[20px]`
+- Shadow: `shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)]`
+- Padding: `p-6` or `p-8`
+
+**Hover State**:
+- Shadow: `hover:shadow-xl`
+- Border: `hover:border-neuro-primary/20`
+- Transition: `transition-all duration-300`
+
+**Highlighted Card**:
+- Border: `border-2 border-neuro-primary/20`
+- Background: `bg-gradient-to-br from-white to-neuro-primary/5`
+
+### Content Organization Best Practices
+
+#### Content Reduction
+
+**Principles**:
+- Remove redundant sections
+- Consolidate similar content
+- Focus on conversion goals
+- Keep technical details minimal on landing pages
+
+**What to Remove**:
+- Roadmap sections (shows unfinished product)
+- Detailed technology specs (move to About/Technical docs)
+- Excessive use cases (keep 2-3 best examples)
+- Redundant trust/explainability sections
+
+**What to Keep**:
+- Clear value proposition
+- Key features/capabilities
+- Social proof (testimonials, stats)
+- Clear CTAs
+- Essential trust indicators
+
+#### Content Hierarchy
+
+**Priority Order**:
+1. Hero (value proposition)
+2. Problem/Solution (why it matters)
+3. Features (what it does)
+4. How It Works (how it works)
+5. Social Proof (trust building)
+6. Use Cases (examples)
+7. Final CTA (conversion)
+
+### Navigation Patterns
+
+**Desktop Navigation**:
+- Links: `text-sm font-normal text-[#525252] hover:text-neuro-primary`
+- Spacing: `gap-6` between links
+- Sticky header with backdrop blur
+
+**Mobile Navigation**:
+- Hamburger menu
+- Full-width menu overlay
+- Smooth open/close animation
+- Links stack vertically
+
+**Navigation Links**:
+- Keep to 4-5 main sections
+- Use anchor links for smooth scrolling
+- Update links when sections change
+
+### CTA Button Patterns
+
+**Primary CTA**:
+- Gradient background
+- White text
+- Height: `h-[48px]` (larger on hero)
+- Padding: `px-8`
+- Shadow: Multi-layer shadow
+- Hover: `hover:brightness-110`
+
+**Secondary CTA**:
+- Outline style
+- Border: `border border-[#EDEDED]`
+- Background: `hover:bg-[#F8F8F8]`
+- Text: `text-[#212121]`
+
+**Placement**:
+- Hero: Below headline and trust indicators
+- Final CTA: Centered with social proof
+- Inline: Next to primary CTA
+
+### Trust Indicators
+
+**Types**:
+- User count: "500+ medical students"
+- Ratings: Star display with score
+- Testimonials: User quotes
+- Trust badges: Institution logos
+- Statistics: Animated counters
+
+**Placement**:
+- Hero section: Below headline
+- Final CTA: Above buttons
+- Dedicated section: Social proof section
+
+**Design**:
+- Icons: Users, CheckCircle2, Star
+- Colors: Primary color for icons
+- Typography: `text-sm font-medium`
+
+### Responsive Design Patterns
+
+**Breakpoints**:
+- Mobile: Default (< 640px)
+- Tablet: `sm:` (≥ 640px)
+- Desktop: `md:` (≥ 768px)
+- Large: `lg:` (≥ 1024px)
+
+**Grid Adaptations**:
+- Mobile: Single column
+- Tablet: 2 columns (`md:grid-cols-2`)
+- Desktop: 3-4 columns (`lg:grid-cols-3` or `lg:grid-cols-4`)
+
+**Typography Scaling**:
+- Headlines: `text-4xl sm:text-5xl lg:text-6xl`
+- Body: `text-sm sm:text-base`
+- Use responsive text sizes
+
+**Spacing Adjustments**:
+- Padding: `px-4 sm:px-6 lg:px-8`
+- Gaps: `gap-4 sm:gap-6`
+- Margins: Responsive where needed
+
+### Performance Considerations
+
+**Image Optimization**:
+- Use Next.js Image component
+- Provide proper alt text
+- Lazy load images below fold
+
+**Animation Performance**:
+- Use `viewport={{ once: true }}` to prevent re-animations
+- Limit simultaneous animations
+- Use CSS transforms for smooth animations
+
+**Code Splitting**:
+- Component-level code splitting
+- Lazy load heavy components
+- Optimize bundle size
+
+### Accessibility Standards
+
+**Semantic HTML**:
+- Use proper heading hierarchy (h1 → h2 → h3)
+- Section elements for major sections
+- Button elements for interactive elements
+
+**ARIA Labels**:
+- Add `aria-label` for icon-only buttons
+- Use `aria-label` for carousel navigation
+- Provide descriptive labels for form inputs
+
+**Keyboard Navigation**:
+- Ensure all interactive elements are keyboard accessible
+- Visible focus states
+- Logical tab order
+
+**Color Contrast**:
+- Text on white: `#212121` (meets WCAG AA)
+- Text on gray: `#525252` (meets WCAG AA)
+- Links: `#F76B15` with sufficient contrast
+
+### Testing Checklist
+
+**Before Launch**:
+- [ ] All sections render correctly on mobile
+- [ ] Animations work smoothly
+- [ ] CTAs are clickable and functional
+- [ ] Navigation links scroll correctly
+- [ ] Images load properly
+- [ ] No console errors
+- [ ] Accessibility audit passed
+- [ ] Performance metrics acceptable
+- [ ] Cross-browser testing completed
 
 ---
 
