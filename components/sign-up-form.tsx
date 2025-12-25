@@ -41,7 +41,7 @@ export function SignUpForm({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
+          emailRedirectTo: `${window.location.origin}/protected/doctors`,
           data: {
             first_name: firstName,
             last_name: lastName,
@@ -66,7 +66,7 @@ export function SignUpForm({
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/protected`,
+          redirectTo: `${window.location.origin}/protected/doctors`,
         },
       });
       if (error) throw error;

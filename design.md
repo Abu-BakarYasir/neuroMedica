@@ -14,6 +14,8 @@ This document provides a comprehensive design system and style guide for buildin
 6. [Implementation Guide](#6-implementation-guide)
 7. [Component Library Specifications](#7-component-library-specifications)
 8. [Landing Page Design Patterns & Best Practices](#8-landing-page-design-patterns--best-practices)
+9. [Dashboard/Home Page Design Patterns](#9-dashboardhome-page-design-patterns)
+10. [Complete Asset Inventory](#10-complete-asset-inventory)
 
 ---
 
@@ -1534,6 +1536,850 @@ This section documents the design patterns, component structures, and best pract
 - [ ] Accessibility audit passed
 - [ ] Performance metrics acceptable
 - [ ] Cross-browser testing completed
+
+---
+
+## 9. Dashboard/Home Page Design Patterns
+
+This section documents the complete design patterns for dashboard and home page components, including tables, search bars, statistics cards, and layout structures.
+
+### Dashboard Layout Structure
+
+**Main Container**:
+- Background: Transparent (inherits from parent gradient background)
+- Layout: Flex column
+- Padding: `p-6` (24px)
+- Overflow: `overflow-x-hidden` to prevent horizontal scroll
+
+**Content Background** (from layout):
+- Background: `linear-gradient(180deg, rgba(255, 202, 222, 0.35) 0%, #F8F8F8 62%)`
+- Border Radius: `32px` (`rounded-3xl`)
+- Position: Relative (for overlay patterns)
+- Ripple Overlay: `/assets/images/Ripple.png` positioned top-right
+
+### Header Section
+
+**Welcome Header**:
+- Layout: Flex row, space between
+- Margin Bottom: `mb-8` (32px)
+
+**Page Title**:
+- Font: Inter Variable, 600 weight
+- Font Size: `24px` (`text-2xl`)
+- Line Height: `1em`
+- Letter Spacing: `1%`
+- Color: `#212121`
+- Example: "Welcome, [username]"
+
+**Page Subtitle**:
+- Font: Inter Variable, 400 weight
+- Font Size: `14px`
+- Line Height: `1.15em`
+- Color: `#6B6C6E`
+- Example: "[Organization Name] - Organization Management Dashboard"
+
+### Search Bar Component
+
+**Container**:
+- Border Radius: `10px` (`rounded-[10px]`)
+- Border: `1px solid #EDEDED`
+- Background: `#FFFFFF`
+- Padding: `8px 12px`
+- Height: `40px` (`h-[40px]`)
+- Display: Flex, items center
+- Gap: `8px` between icon and input
+- Width: `240px` (or responsive)
+- Shadow: Same as card shadow
+
+**Search Icon**:
+- Size: `16px × 16px` (`h-4 w-4`)
+- Color: `#212121`
+- Icon: Search (from lucide-react)
+
+**Input Field**:
+- Background: Transparent
+- Border: None
+- Outline: None
+- Font: Inter Variable, 500 weight
+- Font Size: `14px`
+- Line Height: `1.15em`
+- Letter Spacing: `0.5%`
+- Color: `#212121`
+- Flex: 1 (takes remaining space)
+- Placeholder: "Search"
+
+**Keyboard Shortcut Badge**:
+- Border Radius: `22px` (`rounded-[22px]`)
+- Background: `#F8F8F8`
+- Padding: `2px 6px`
+- Font Size: `12px` or `14px`
+- Font: Inter Variable, 400 weight
+- Color: `#212121`
+- Text: "⌘ K" (or appropriate shortcut)
+
+**Implementation**:
+```tsx
+<div className="flex items-center gap-2 rounded-[10px] border border-[#EDEDED] bg-white px-3 h-[40px] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)]">
+  <Search className="h-4 w-4 text-[#212121]" />
+  <input 
+    type="text" 
+    placeholder="Search" 
+    className="flex-1 bg-transparent border-none outline-none text-sm font-medium text-[#212121]"
+  />
+  <div className="rounded-[22px] bg-[#F8F8F8] px-1.5 py-0.5 text-xs text-[#212121]">⌘ K</div>
+</div>
+```
+
+### Statistics Cards
+
+**Card Container**:
+- Layout: Grid (`grid-cols-1 md:grid-cols-3`)
+- Gap: `gap-4` (16px) or `gap-6` (24px)
+- Margin Bottom: `mb-6` (24px)
+
+**Individual Stat Card**:
+
+*Default Card Style*:
+- Border Radius: `13px` (`rounded-[13px]`)
+- Border: `1px solid #EDEDED`
+- Background: `#FCFCFC`
+- Padding: `p-4` (16px)
+- Min Height: `150px` (optional)
+- Position: Relative (for pattern overlay)
+- Shadow: 
+  ```css
+  0px 3px 16px 0px rgba(30,37,75,0.02),
+  0px 2px 2px 0px rgba(30,37,75,0.01),
+  inset 0px 0px 32px 0px rgba(255, 255, 255, 0.5)
+  ```
+
+*Highlighted Card Style* (first card):
+- Background: `#E0E0E0` (Gray/5)
+- Same shadow as default
+- Pattern Overlay: `/assets/icons/Pattern.png` at 30% opacity
+
+*Blue Accent Card* (optional):
+- Background: `#EBF5FF` or `#D5EFFF`
+- Same border and shadow
+
+**Pattern Overlay**:
+- Background Image: `url(/assets/icons/Pattern.png)`
+- Opacity: `0.3` (30%)
+- Position: Absolute, inset-0
+- Repeat: Repeat
+- Size: Auto
+
+**Card Content Structure**:
+
+1. **Header Row**:
+   - Layout: Flex, justify-between
+   - Margin Bottom: `mb-4` (16px)
+
+2. **Stat Title**:
+   - Font: Inter Variable, 500 weight
+   - Font Size: `15px` or `14px`
+   - Line Height: `1em`
+   - Color: `#212121` or `#0A0A0A`
+
+3. **Icon Container**:
+   - Size: `24px × 24px` (`w-6 h-6`)
+   - Icon: From `/assets/icons/` directory
+   - Examples: `total-patients-icon.svg`, `active-patients-icon.svg`
+
+4. **Stat Value**:
+   - Font: Inter Variable, 700 weight (bold)
+   - Font Size: `40px` or `56px` (large stats)
+   - Line Height: `1` (tight)
+   - Color: `#212121` or `#0A0A0A`
+   - Margin Bottom: `mb-1` (4px)
+
+5. **Comparison Text**:
+   - Layout: Flex, items-center, gap-1
+   - Font Size: `12px` (`text-xs`)
+   - Color: `#212121` or `#0A0A0A`
+   - Trend Icon: `16px × 16px`
+   - Examples: `green.svg` (up), `red.svg` (down), `trend-neutral-blue.svg` (neutral)
+   - Text: "vs. last month" or similar
+
+**Implementation**:
+```tsx
+<div className="rounded-[13px] relative overflow-hidden p-4 border border-[#EDEDED] bg-[#FCFCFC]" style={{
+  boxShadow: '0px 3px 16px 0px rgba(30,37,75,0.02), 0px 2px 2px 0px rgba(30,37,75,0.01), inset 0px 0px 32px 0px rgba(255, 255, 255, 0.5)'
+}}>
+  <div className="absolute inset-0 opacity-30" style={{
+    backgroundImage: 'url(/assets/icons/Pattern.png)',
+    backgroundRepeat: 'repeat',
+    backgroundSize: 'auto'
+  }}></div>
+  <div className="relative z-10">
+    <div className="flex items-start justify-between mb-4">
+      <span className="text-[15px] font-medium text-[#212121]">Total Users</span>
+      <Image src="/assets/icons/total-patients-icon.svg" alt="Icon" width={24} height={24} />
+    </div>
+    <div className="space-y-1">
+      <div className="text-[40px] font-bold leading-none text-[#212121]">324</div>
+      <div className="flex items-center gap-1 text-xs">
+        <Image src="/assets/icons/green.svg" alt="Trend" width={16} height={16} />
+        <span className="text-[#212121]">vs. last month</span>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+### Action Buttons
+
+**Button Container**:
+- Layout: Flex, gap-2
+- Alignment: Items center
+
+**Button Style**:
+- Height: `32px` (`h-8`)
+- Padding: `px-3` (12px horizontal)
+- Border Radius: `10px` (`rounded-[10px]`)
+- Border: `1px solid #EDEDED`
+- Background: White
+- Text Color: `#212121`
+- Font Size: `14px` (`text-sm`)
+- Font Weight: Normal (`font-normal`)
+- Shadow: Same as card shadow
+- Hover: `hover:bg-gray-50`
+- Gap: `gap-2` (8px) between icon and text
+
+**Icon**:
+- Size: `16px × 16px`
+- Source: `/assets/icons/` directory
+- Examples: `user-icon.svg`, `briefcase-medical.svg`
+
+**Implementation**:
+```tsx
+<Button 
+  variant="outline"
+  size="sm"
+  className="h-8 px-3 text-sm border border-[#EDEDED] text-[#212121] bg-white hover:bg-gray-50 rounded-[10px] flex items-center gap-2"
+  style={{
+    boxShadow: '0px 3px 16px 0px rgba(30,37,75,0.02), 0px 2px 2px 0px rgba(30,37,75,0.01)',
+  }}
+>
+  <Image src="/assets/icons/user-icon.svg" alt="User" width={16} height={16} />
+  <span className="font-normal">Manage Clinicians</span>
+</Button>
+```
+
+### Table Components
+
+**Table Container**:
+- Background: `#FFFFFF`
+- Border: `1px solid #EDEDED`
+- Border Radius: `20px` (`rounded-[20px]`)
+- Overflow: Hidden
+- Shadow: Same as card shadow
+
+**Table Header Section**:
+- Padding: `p-6` (24px)
+- Border Bottom: `1px solid #EDEDED` (optional)
+
+**Table Title**:
+- Font: Inter Variable, 500 weight
+- Font Size: `18px`
+- Line Height: `1em`
+- Letter Spacing: `1%`
+- Color: `#212121`
+- Margin Bottom: `mb-2` (8px)
+
+**Table Description**:
+- Font: Inter Variable, 400 weight
+- Font Size: `14px`
+- Line Height: `1.15em`
+- Color: `#6B6C6E`
+
+**Table Element Styles**:
+
+*Table Wrapper*:
+- Width: `100%`
+- Overflow: Auto (horizontal scroll if needed)
+- Position: Relative
+
+*Table Header (thead)*:
+- Border Bottom: `1px solid #EDEDED`
+- Background: `#FAFAFA` (optional, for sticky header)
+
+*Table Head (th)*:
+- Height: `40px` (`h-10`)
+- Padding: `px-2` (8px horizontal)
+- Text Align: Left
+- Font: Inter Variable, 500 weight (medium)
+- Font Size: `16px`
+- Color: `#212121`
+- Vertical Align: Middle
+- White Space: Nowrap
+
+*Table Row (tr)*:
+- Border Bottom: `1px solid #EDEDED`
+- Hover: `hover:bg-muted/50` (light gray background)
+- Selected: `data-[state=selected]:bg-muted` (highlighted background)
+- Transition: `transition-colors`
+
+*Table Cell (td)*:
+- Padding: `p-2` (8px)
+- Vertical Align: Middle
+- White Space: Nowrap
+- Font Size: `14px`
+- Color: `#212121`
+
+**Table Actions**:
+- View Button: Small outline button
+- Edit/Delete: Icon buttons or dropdown menu
+
+**Implementation**:
+```tsx
+<div className="rounded-[20px] border border-[#EDEDED] bg-white overflow-hidden shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)]">
+  <div className="p-6 border-b border-[#EDEDED]">
+    <h3 className="text-[18px] font-medium text-[#212121] mb-2">Table Title</h3>
+    <p className="text-sm text-[#6B6C6E]">Table description</p>
+  </div>
+  <div className="relative w-full overflow-x-auto">
+    <table className="w-full text-sm">
+      <thead className="border-b">
+        <tr>
+          <th className="h-10 px-2 text-left font-medium text-[#212121]">Column 1</th>
+          <th className="h-10 px-2 text-left font-medium text-[#212121]">Column 2</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr className="border-b hover:bg-gray-50 transition-colors">
+          <td className="p-2">Data 1</td>
+          <td className="p-2">Data 2</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+```
+
+### Badge Components
+
+**Status Badges**:
+
+*Active Badge*:
+- Background: `#DEF8E7`
+- Text Color: `#13893A`
+- Padding: `2.5px 8px`
+- Border Radius: Variable (rounded)
+- Font Size: `13px`
+- Font Weight: 400
+
+*Inactive Badge*:
+- Background: `#F5F5F5`
+- Text Color: `#6B6C6E`
+- Same padding and styling
+
+*Warning Badge*:
+- Background: `#FBF6E4`
+- Text Color: `#DFAD0C`
+- Same padding and styling
+
+**Badge with Dot**:
+- Layout: Flex, items-center, gap-1.5
+- Dot Size: `8px × 8px`
+- Dot Border Radius: `50%` (circle)
+- Dot Color: Matches text color
+
+### Battery/Device Cards
+
+**Battery Card** (Special):
+- Border Radius: `13px` (`rounded-[13px]`)
+- Border: None
+- Background: `#080808` (Black)
+- Position: Relative
+- Overflow: Hidden
+- Min Height: `150px`
+- Pattern Overlay: `/assets/icons/rectangle-stripe.png`
+
+**Battery Icon**:
+- Size: `20px × 20px`
+- Source: `/assets/icons/battery 1.svg`, `battery 2.svg`, `battery 3.svg`
+- Color: White or appropriate color
+
+**Battery Percentage Display**:
+- Font: Large, bold
+- Color: White (on black background)
+- Visual: Progress bar or fill indicator
+
+### Section Cards
+
+**Main Section Card**:
+- Border Radius: `20px` (`rounded-[20px]`)
+- Border: `1px solid #EDEDED`
+- Background: `#FFFFFF` or `#FFFBFB`
+- Padding: `p-6` (24px) or `p-4` (16px)
+- Shadow: Standard card shadow
+- Margin Bottom: `mb-6` (24px)
+
+**Card Header**:
+- Layout: Flex, justify-between
+- Margin Bottom: `mb-4` (16px) or `mb-6` (24px)
+
+**Card Title**:
+- Font: Inter Variable, 500 or 600 weight
+- Font Size: `16px` or `18px`
+- Color: `#212121` or `#0A0A0A`
+- Line Height: `1em`
+- Letter Spacing: `1%`
+
+**Card Subtitle/Description**:
+- Font: Inter Variable, 400 weight
+- Font Size: `12px` or `14px`
+- Color: `#6B6C6E`
+- Line Height: `1.15em`
+
+### Content Area Background
+
+**Gradient Background** (from layout):
+```css
+background: linear-gradient(180deg, rgba(255, 202, 222, 0.35) 0%, #F8F8F8 62%);
+border-radius: 32px;
+```
+
+**Ripple Overlay**:
+- Image: `/assets/images/Ripple.png`
+- Position: Top right
+- Size: `900px auto` (or responsive)
+- Z-Index: 0 (behind content)
+- Pointer Events: None
+
+**Implementation**:
+```tsx
+<div 
+  className="flex flex-1 flex-col overflow-hidden relative rounded-3xl"
+  style={{
+    background: 'linear-gradient(180deg, rgba(255, 202, 222, 0.35) 0%, #F8F8F8 62%)',
+  }}
+>
+  <div 
+    className="absolute inset-0 pointer-events-none"
+    style={{
+      backgroundImage: 'url(/assets/images/Ripple.png)',
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: 'top right',
+      backgroundSize: '900px auto',
+      zIndex: 0
+    }}
+  ></div>
+  <main className="flex-1 overflow-y-auto p-6 relative z-10">
+    {/* Content */}
+  </main>
+</div>
+```
+
+---
+
+## 10. Complete Asset Inventory
+
+This section provides a comprehensive list of all required assets (images, icons, gradients) needed for the Neuro Medica application.
+
+### Required Asset Files
+
+#### 1. Gradient Backgrounds
+
+**`/public/gradient.svg`** - **REQUIRED**
+- **Purpose**: Full-page background for sign-in and sign-up pages
+- **Format**: SVG (Scalable Vector Graphics)
+- **Dimensions**: 1392 × 976 pixels (scales to any size)
+- **Description**: Layered blurred ellipses creating soft pink-to-peach gradient effect
+- **Colors**: 
+  - Top: `#F6D5EB` (soft pink)
+  - Middle: `#F9DDE5` (light pink)
+  - Lower: `#F4D7E2` → `#F9DCCE` → `#FADFC0` (pink to peach)
+- **Usage**: Applied as `backgroundImage: "url('/gradient.svg')"` with `backgroundSize: "cover"`
+
+#### 2. Pattern Overlays
+
+**`/public/assets/icons/Pattern.png`** - **REQUIRED**
+- **Purpose**: Subtle pattern overlay for statistics cards
+- **Format**: PNG with transparency
+- **Usage**: Applied as background image at 30% opacity
+- **Position**: Absolute, covering entire card
+- **Repeat**: Repeat pattern
+
+**`/public/assets/icons/rectangle-stripe.png`** - **REQUIRED**
+- **Purpose**: Pattern overlay for battery/device cards
+- **Format**: PNG
+- **Usage**: Background pattern for dark cards
+
+#### 3. Ripple/Texture Overlays
+
+**`/public/assets/images/Ripple.png`** - **REQUIRED**
+- **Purpose**: Overlay pattern on dashboard content areas
+- **Format**: PNG with transparency
+- **Position**: Top right
+- **Size**: 900px auto (or responsive)
+- **Z-Index**: 0 (behind content)
+- **Usage**: Creates subtle texture overlay on dashboard backgrounds
+
+**`/public/assets/images/ripple-bg.svg`** - **OPTIONAL**
+- **Purpose**: Alternative ripple background (SVG version)
+- **Format**: SVG
+
+#### 4. Brand Logo
+
+**`/public/assets/icons/Logo.svg`** - **REQUIRED**
+- **Purpose**: Brand logo for headers and sidebars
+- **Format**: SVG (scalable)
+- **Recommended Size**: 156 × 24px (or proportional)
+- **Usage**: Sidebar headers, navigation bars
+
+#### 5. Sidebar Icons (Navigation)
+
+**Location**: `/public/assets/sidebar-icons/`
+
+All icons should be SVG format, 14 × 14px for navigation items:
+
+- **`dashboard-icon.svg`** - **REQUIRED**
+  - Purpose: Dashboard navigation item
+  - Size: 14 × 14px
+
+- **`clinicals-icon.svg`** - **REQUIRED**
+  - Purpose: Clinicals/Staff navigation item
+  - Size: 14 × 14px
+
+- **`patients-icon.svg`** - **REQUIRED**
+  - Purpose: Patients navigation item
+  - Size: 14 × 14px
+
+- **`devices-icon.svg`** - **REQUIRED**
+  - Purpose: Devices navigation item
+  - Size: 14 × 14px
+
+- **`analytics-icon.svg`** - **REQUIRED**
+  - Purpose: Analytics navigation item
+  - Size: 14 × 14px
+
+- **`settings-icon.svg`** - **REQUIRED**
+  - Purpose: Settings navigation item
+  - Size: 14 × 14px
+
+- **`support-icon.svg`** - **REQUIRED**
+  - Purpose: Support navigation item
+  - Size: 14 × 14px
+
+- **`documentation-icon.svg`** - **REQUIRED**
+  - Purpose: Documentation navigation item
+  - Size: 14 × 14px
+
+- **`logout-icon.svg`** - **REQUIRED**
+  - Purpose: Logout button icon
+  - Size: 20 × 20px (slightly larger)
+
+#### 6. General Icons (Dashboard & UI)
+
+**Location**: `/public/assets/icons/`
+
+- **`user-icon.svg`** - **REQUIRED**
+  - Purpose: User/people related actions
+  - Size: 16 × 16px (for buttons)
+  - Usage: "Manage Clinicians" button, user-related UI
+
+- **`briefcase-medical.svg`** - **REQUIRED**
+  - Purpose: Facility/medical related actions
+  - Size: 16 × 16px (for buttons)
+  - Usage: "Manage Facilities" button
+
+- **`total-patients-icon.svg`** - **REQUIRED**
+  - Purpose: Total users/patients statistic icon
+  - Size: 24 × 24px
+  - Usage: Statistics cards
+
+- **`active-patients-icon.svg`** - **REQUIRED**
+  - Purpose: Active patients/staff statistic icon
+  - Size: 24 × 24px
+  - Usage: Statistics cards
+
+- **`inactive-patients-icon.svg`** - **OPTIONAL**
+  - Purpose: Inactive patients/staff statistic icon
+  - Size: 24 × 24px
+
+- **`active-staffs-icon.svg`** - **OPTIONAL**
+  - Purpose: Active staff statistic icon
+  - Size: 24 × 24px
+
+- **`inactive-staffs-icon.svg`** - **OPTIONAL**
+  - Purpose: Inactive staff statistic icon
+  - Size: 24 × 24px
+
+- **`total-staffs-icon.svg`** - **OPTIONAL**
+  - Purpose: Total staff statistic icon
+  - Size: 24 × 24px
+
+#### 7. Trend/Status Icons
+
+- **`green.svg`** - **REQUIRED**
+  - Purpose: Upward trend indicator
+  - Size: 16 × 16px
+  - Usage: Statistics comparison text
+
+- **`red.svg`** - **REQUIRED**
+  - Purpose: Downward trend indicator
+  - Size: 16 × 16px
+  - Usage: Statistics comparison text
+
+- **`trend-neutral-blue.svg`** - **REQUIRED**
+  - Purpose: Neutral/stable trend indicator
+  - Size: 16 × 16px
+  - Usage: Statistics comparison text
+
+- **`trend-up-green.svg`** - **OPTIONAL**
+  - Alternative upward trend icon
+
+- **`trend-down-red.svg`** - **OPTIONAL**
+  - Alternative downward trend icon
+
+#### 8. Battery Icons
+
+- **`battery 1.svg`** - **REQUIRED**
+  - Purpose: Battery health indicator (level 1)
+  - Size: 20 × 20px
+  - Usage: Battery/device cards
+
+- **`battery 2.svg`** - **REQUIRED**
+  - Purpose: Battery health indicator (level 2)
+  - Size: 20 × 20px
+  - Usage: Battery/device cards
+
+- **`battery 3.svg`** - **REQUIRED**
+  - Purpose: Battery health indicator (level 3)
+  - Size: 20 × 20px
+  - Usage: Battery/device cards
+
+- **`battery.png`** - **OPTIONAL**
+  - Alternative battery icon (PNG format)
+
+#### 9. UI Element Icons
+
+- **`search-icon.svg`** - **OPTIONAL**
+  - Purpose: Search input icon (can use lucide-react Search icon instead)
+  - Size: 16 × 16px
+
+- **`filter-icon.svg`** - **OPTIONAL**
+  - Purpose: Filter button icon
+  - Size: 16 × 16px
+
+- **`plus-icon.svg`** - **REQUIRED**
+  - Purpose: Add/create actions
+  - Size: 16 × 16px
+  - Usage: Add buttons, create actions
+
+- **`dots-vertical.svg`** - **OPTIONAL**
+  - Purpose: More options menu
+  - Size: 16 × 16px
+
+- **`arrow-up-right.svg`** - **OPTIONAL**
+  - Purpose: External link indicator
+  - Size: 16 × 16px
+
+- **`help-circle.svg`** - **OPTIONAL**
+  - Purpose: Help/tooltip icon
+  - Size: 16 × 16px
+
+#### 10. Sidebar Decorative Elements
+
+- **`Vector (1).svg`** - **REQUIRED**
+  - Purpose: Sidebar collapse/expand toggle icon
+  - Size: 13 × 13px
+  - Usage: Sidebar header toggle button
+
+- **`Vector.svg`** - **OPTIONAL**
+  - Alternative vector icon
+
+- **`Group 1244832313.svg`** - **REQUIRED**
+  - Purpose: Sidebar gradient background (decorative footer)
+  - Format: SVG
+  - Usage: Bottom of sidebar for decorative effect
+  - Position: Absolute bottom, full width
+
+- **`Group 1244832316.svg`** - **OPTIONAL**
+  - Alternative decorative element
+
+#### 11. User/Avatar Images
+
+- **`Memoji Boys 2-21.png`** - **OPTIONAL**
+  - Purpose: Default user avatar
+  - Format: PNG
+  - Size: 36 × 36px
+  - Usage: Sidebar user profile section
+
+- **`user-avatar.png`** - **OPTIONAL**
+  - Location: `/public/assets/sidebar-icons/`
+  - Purpose: Alternative user avatar
+  - Format: PNG
+
+#### 12. Alert/Notification Icons
+
+- **`message-heart-circle.png`** - **REQUIRED**
+  - Purpose: AI Predictive Alert icon
+  - Format: PNG
+  - Size: 12 × 12px (displayed as 12px)
+  - Usage: Alert cards in sidebar
+
+#### 13. Empty State Images
+
+- **`empty-state-clinicals.svg`** - **OPTIONAL**
+  - Location: `/public/assets/images/`
+  - Purpose: Empty state illustration for clinicals section
+  - Format: SVG
+
+- **`medical-box-empty-state.png`** - **OPTIONAL**
+  - Location: `/public/`
+  - Purpose: Empty state for medical/device sections
+  - Format: PNG
+
+#### 14. Additional Decorative Elements
+
+- **`Frame 1244832485.svg`** - **OPTIONAL**
+  - Purpose: Decorative frame element
+
+- **`image 4.png`** / **`image 4.svg`** - **OPTIONAL**
+  - Purpose: General image assets
+
+- **`image 5.svg`** - **OPTIONAL**
+  - Purpose: General image asset
+
+- **`Line 347.png`**, **`Line 348.png`**, **`Line 349.png`** - **OPTIONAL**
+  - Purpose: Decorative line elements
+
+- **`top layer1.png`** - **OPTIONAL**
+  - Purpose: Decorative layer element
+
+- **`Subtract.png`** - **OPTIONAL**
+  - Purpose: Decorative element
+
+- **`Container (1).png`** - **OPTIONAL**
+  - Purpose: Container/decorative element
+
+- **`group.png`** - **OPTIONAL**
+  - Purpose: Group/decorative element
+
+- **`power.png`** - **OPTIONAL**
+  - Purpose: Power/energy related icon
+
+### Complete Asset Directory Structure
+
+```
+public/
+├── gradient.svg                          [REQUIRED - Auth page background]
+├── lynx-logo.png                        [OPTIONAL - Alternative logo]
+├── medical-box-empty-state.png          [OPTIONAL - Empty state]
+├── Pattern.png                          [OPTIONAL - Alternative pattern]
+│
+└── assets/
+    ├── icons/
+    │   ├── Logo.svg                     [REQUIRED - Brand logo]
+    │   ├── Pattern.png                  [REQUIRED - Card pattern overlay]
+    │   ├── rectangle-stripe.png         [REQUIRED - Battery card pattern]
+    │   │
+    │   ├── user-icon.svg                [REQUIRED - User actions]
+    │   ├── briefcase-medical.svg        [REQUIRED - Facility actions]
+    │   ├── briefcase-medical 2.svg      [OPTIONAL - Alternative]
+    │   │
+    │   ├── total-patients-icon.svg      [REQUIRED - Stats icon]
+    │   ├── active-patients-icon.svg     [REQUIRED - Stats icon]
+    │   ├── inactive-patients-icon.svg   [OPTIONAL - Stats icon]
+    │   ├── total-staffs-icon.svg        [OPTIONAL - Stats icon]
+    │   ├── active-staffs-icon.svg       [OPTIONAL - Stats icon]
+    │   ├── inactive-staffs-icon.svg     [OPTIONAL - Stats icon]
+    │   │
+    │   ├── green.svg                    [REQUIRED - Up trend]
+    │   ├── red.svg                      [REQUIRED - Down trend]
+    │   ├── trend-neutral-blue.svg       [REQUIRED - Neutral trend]
+    │   ├── trend-up-green.svg           [OPTIONAL - Alternative]
+    │   ├── trend-down-red.svg           [OPTIONAL - Alternative]
+    │   │
+    │   ├── battery 1.svg                [REQUIRED - Battery icon 1]
+    │   ├── battery 2.svg                [REQUIRED - Battery icon 2]
+    │   ├── battery 3.svg                [REQUIRED - Battery icon 3]
+    │   ├── battery.png                  [OPTIONAL - Alternative]
+    │   │
+    │   ├── plus-icon.svg                [REQUIRED - Add action]
+    │   ├── search-icon.svg              [OPTIONAL - Search icon]
+    │   ├── filter-icon.svg              [OPTIONAL - Filter icon]
+    │   ├── dots-vertical.svg            [OPTIONAL - More menu]
+    │   ├── arrow-up-right.svg           [OPTIONAL - External link]
+    │   ├── help-circle.svg              [OPTIONAL - Help icon]
+    │   ├── chat-icon.svg                [OPTIONAL - Chat icon]
+    │   ├── id-badge-2 1.svg             [OPTIONAL - Badge icon]
+    │   │
+    │   ├── Vector (1).svg               [REQUIRED - Sidebar toggle]
+    │   ├── Vector.svg                   [OPTIONAL - Alternative]
+    │   ├── Group 1244832313.svg         [REQUIRED - Sidebar gradient]
+    │   ├── Group 1244832316.svg         [OPTIONAL - Alternative]
+    │   │
+    │   ├── message-heart-circle.png     [REQUIRED - Alert icon]
+    │   ├── Memoji Boys 2-21.png        [OPTIONAL - Avatar]
+    │   │
+    │   └── [other optional decorative icons]
+    │
+    ├── images/
+    │   ├── Ripple.png                   [REQUIRED - Dashboard overlay]
+    │   ├── ripple-bg.svg                [OPTIONAL - Alternative]
+    │   ├── Group 1244832313 (1).svg     [OPTIONAL - Decorative]
+    │   └── empty-state-clinicals.svg    [OPTIONAL - Empty state]
+    │
+    └── sidebar-icons/
+        ├── dashboard-icon.svg           [REQUIRED - Nav icon]
+        ├── clinicals-icon.svg           [REQUIRED - Nav icon]
+        ├── patients-icon.svg            [REQUIRED - Nav icon]
+        ├── devices-icon.svg             [REQUIRED - Nav icon]
+        ├── analytics-icon.svg           [REQUIRED - Nav icon]
+        ├── settings-icon.svg            [REQUIRED - Nav icon]
+        ├── support-icon.svg             [REQUIRED - Nav icon]
+        ├── documentation-icon.svg       [REQUIRED - Nav icon]
+        ├── logout-icon.svg              [REQUIRED - Logout icon]
+        └── user-avatar.png              [OPTIONAL - Avatar]
+```
+
+### Asset Usage Summary
+
+**Critical Assets (Must Have)**:
+1. `/public/gradient.svg` - Auth page background
+2. `/public/assets/icons/Logo.svg` - Brand logo
+3. `/public/assets/icons/Pattern.png` - Card pattern
+4. `/public/assets/images/Ripple.png` - Dashboard overlay
+5. All sidebar navigation icons (8 icons)
+6. Statistics card icons (3-4 icons)
+7. Trend icons (3 icons)
+8. Battery icons (3 icons)
+9. Action button icons (2-3 icons)
+10. Sidebar decorative elements (2 icons)
+
+**Important Assets (Should Have)**:
+- User/avatar images
+- Alert/notification icons
+- Additional UI element icons
+
+**Optional Assets (Nice to Have)**:
+- Empty state illustrations
+- Decorative elements
+- Alternative icon variations
+
+### Asset Creation Guidelines
+
+**Icon Specifications**:
+- **Format**: SVG preferred (scalable, crisp at any size)
+- **Size**: Match specified dimensions (14px, 16px, 20px, 24px)
+- **Color**: Monochrome or single color (will be filtered/inverted as needed)
+- **Style**: Consistent line weight and style across all icons
+- **Optimization**: Optimize SVG files for web (remove unnecessary metadata)
+
+**Image Specifications**:
+- **Format**: PNG for photos/patterns, SVG for illustrations
+- **Transparency**: Use PNG with alpha channel where needed
+- **Optimization**: Compress images for web (use tools like ImageOptim, TinyPNG)
+- **Responsive**: Provide @2x versions for retina displays if needed
+
+**Gradient SVG**:
+- The gradient.svg file uses complex layered ellipses with blur filters
+- Can be recreated in design tools (Figma, Illustrator) or generated programmatically
+- Maintain the soft, organic blob-like appearance
 
 ---
 

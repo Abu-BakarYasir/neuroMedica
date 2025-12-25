@@ -1,0 +1,30 @@
+<svg width="240" height="180" viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="120" cy="90" r="80" fill="#F5F5F5"/>
+  
+  <!-- Document/Clipboard -->
+  <rect x="80" y="50" width="80" height="100" rx="8" fill="white" stroke="#E5E7EB" stroke-width="2"/>
+  <rect x="90" y="65" width="60" height="8" rx="4" fill="#E5E7EB"/>
+  <rect x="90" y="80" width="45" height="6" rx="3" fill="#F3F4F6"/>
+  <rect x="90" y="92" width="50" height="6" rx="3" fill="#F3F4F6"/>
+  <rect x="90" y="104" width="40" height="6" rx="3" fill="#F3F4F6"/>
+  
+  <!-- Medical Cross Icon -->
+  <circle cx="120" cy="40" r="18" fill="#FF6B6B"/>
+  <rect x="116" y="30" width="8" height="20" rx="2" fill="white"/>
+  <rect x="110" y="36" width="20" height="8" rx="2" fill="white"/>
+  
+  <!-- Stethoscope Icon -->
+  <g transform="translate(160, 120)">
+    <path d="M0 0C0-8 4-12 10-12C16-12 20-8 20 0" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <circle cx="10" cy="8" r="5" fill="white" stroke="#9CA3AF" stroke-width="2"/>
+    <circle cx="10" cy="8" r="2" fill="#9CA3AF"/>
+  </g>
+  
+  <!-- Person Icon -->
+  <g transform="translate(50, 120)">
+    <circle cx="10" cy="5" r="6" fill="white" stroke="#D1D5DB" stroke-width="2"/>
+    <path d="M2 20C2 15 5 12 10 12C15 12 18 15 18 20" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>
+
