@@ -1,17 +1,19 @@
 "use client";
 
-import { Maximize2, ChevronDown } from "lucide-react";
+import { Maximize2, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 interface ChatbotHeaderProps {
   onExpand?: () => void;
+  onClose?: () => void;
   showExpandButton?: boolean;
   showCloseButton?: boolean;
 }
 
 export function ChatbotHeader({ 
-  onExpand, 
+  onExpand,
+  onClose, 
   showExpandButton = true,
   showCloseButton = false 
 }: ChatbotHeaderProps) {
@@ -26,7 +28,10 @@ export function ChatbotHeader({
   };
 
   const handleClose = () => {
-    if (onExpand) {
+    if (onClose) {
+      onClose();
+    } else if (onExpand) {
+      // Fallback to onExpand if onClose not provided
       onExpand();
     }
   };
@@ -54,10 +59,10 @@ export function ChatbotHeader({
           variant="ghost"
           size="icon"
           onClick={handleClose}
-          className="h-8 w-8"
+          className="h-8 w-8 hover:bg-gray-100"
           aria-label="Close chat"
         >
-          <ChevronDown className="w-4 h-4" />
+          <ChevronDown className="w-4 h-4 text-gray-600" />
         </Button>
       )}
       {showExpandButton && !showCloseButton && (

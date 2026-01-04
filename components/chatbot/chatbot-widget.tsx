@@ -66,7 +66,7 @@ export function ChatbotWidget() {
             <div className="bg-white rounded-t-2xl shadow-2xl border border-gray-200 h-[600px] max-h-[calc(100vh-8rem)] flex flex-col overflow-hidden">
               <ChatWindow
                 showInput={true}
-                onExpand={handleClose}
+                onClose={handleClose}
                 showExpandButton={false}
                 showCloseButton={true}
               />

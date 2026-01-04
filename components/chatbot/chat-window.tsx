@@ -9,13 +9,15 @@ import { useChat } from "@/lib/chatbot/hooks";
 
 interface ChatWindowProps {
   onExpand?: () => void;
+  onClose?: () => void;
   showExpandButton?: boolean;
   showInput?: boolean;
   showCloseButton?: boolean;
 }
 
 export function ChatWindow({ 
-  onExpand, 
+  onExpand,
+  onClose, 
   showExpandButton = true, 
   showInput = true,
   showCloseButton = false 
@@ -34,7 +36,8 @@ export function ChatWindow({
   return (
     <div className="flex flex-col h-full bg-white rounded-lg overflow-hidden">
       <ChatbotHeader 
-        onExpand={onExpand} 
+        onExpand={onExpand}
+        onClose={onClose}
         showExpandButton={showExpandButton}
         showCloseButton={showCloseButton}
       />
