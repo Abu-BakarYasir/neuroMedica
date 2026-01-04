@@ -11,9 +11,15 @@ interface ChatWindowProps {
   onExpand?: () => void;
   showExpandButton?: boolean;
   showInput?: boolean;
+  showCloseButton?: boolean;
 }
 
-export function ChatWindow({ onExpand, showExpandButton = true, showInput = true }: ChatWindowProps) {
+export function ChatWindow({ 
+  onExpand, 
+  showExpandButton = true, 
+  showInput = true,
+  showCloseButton = false 
+}: ChatWindowProps) {
   const { messages, isLoading, sendMessage } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -27,7 +33,11 @@ export function ChatWindow({ onExpand, showExpandButton = true, showInput = true
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg overflow-hidden">
-      <ChatbotHeader onExpand={onExpand} showExpandButton={showExpandButton} />
+      <ChatbotHeader 
+        onExpand={onExpand} 
+        showExpandButton={showExpandButton}
+        showCloseButton={showCloseButton}
+      />
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">

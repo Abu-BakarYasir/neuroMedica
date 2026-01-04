@@ -1,15 +1,20 @@
 "use client";
 
-import { Maximize2 } from "lucide-react";
+import { Maximize2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 interface ChatbotHeaderProps {
   onExpand?: () => void;
   showExpandButton?: boolean;
+  showCloseButton?: boolean;
 }
 
-export function ChatbotHeader({ onExpand, showExpandButton = true }: ChatbotHeaderProps) {
+export function ChatbotHeader({ 
+  onExpand, 
+  showExpandButton = true,
+  showCloseButton = false 
+}: ChatbotHeaderProps) {
   const router = useRouter();
 
   const handleExpand = () => {
@@ -17,6 +22,12 @@ export function ChatbotHeader({ onExpand, showExpandButton = true }: ChatbotHead
       onExpand();
     } else {
       router.push("/chat");
+    }
+  };
+
+  const handleClose = () => {
+    if (onExpand) {
+      onExpand();
     }
   };
 
@@ -38,7 +49,18 @@ export function ChatbotHeader({ onExpand, showExpandButton = true }: ChatbotHead
           <p className="text-xs text-gray-500">What are you looking for today?</p>
         </div>
       </div>
-      {showExpandButton && (
+      {showCloseButton && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleClose}
+          className="h-8 w-8"
+          aria-label="Close chat"
+        >
+          <ChevronDown className="w-4 h-4" />
+        </Button>
+      )}
+      {showExpandButton && !showCloseButton && (
         <Button
           variant="ghost"
           size="icon"

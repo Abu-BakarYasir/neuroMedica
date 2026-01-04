@@ -30,19 +30,28 @@ export function ChatbotWidget() {
     setIsExpanded(!isExpanded);
   };
 
+  const handleClose = () => {
+    setIsExpanded(false);
+  };
+
   return (
     <>
-      {/* Compact Preview Widget - Always visible when authenticated */}
-      <motion.div
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="fixed bottom-6 right-6 z-40"
-      >
-        <ChatbotPreviewWidget
-          onExpand={handleExpand}
-          isExpanded={isExpanded}
-        />
-      </motion.div>
+      {/* Compact Preview Widget - Only visible when chat panel is collapsed */}
+      <AnimatePresence>
+        {!isExpanded && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            className="fixed bottom-6 right-6 z-40"
+          >
+            <ChatbotPreviewWidget
+              onExpand={handleExpand}
+              isExpanded={isExpanded}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Expanded Chat Panel */}
       <AnimatePresence>
@@ -52,15 +61,14 @@ export function ChatbotWidget() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-[130px] right-6 z-30 w-[380px]"
+            className="fixed bottom-6 right-6 z-40 w-[380px]"
           >
-            <div className="bg-white rounded-t-2xl shadow-2xl border border-gray-200 h-[500px] max-h-[calc(100vh-10rem)] flex flex-col overflow-hidden">
+            <div className="bg-white rounded-t-2xl shadow-2xl border border-gray-200 h-[600px] max-h-[calc(100vh-8rem)] flex flex-col overflow-hidden">
               <ChatWindow
-                showInput={false}
-                onExpand={() => {
-                  setIsExpanded(false);
-                  window.location.href = "/chat";
-                }}
+                showInput={true}
+                onExpand={handleClose}
+                showExpandButton={false}
+                showCloseButton={true}
               />
             </div>
           </motion.div>
