@@ -8,6 +8,7 @@ import { StatsSection } from "@/components/landing/stats-section";
 import { SocialProof } from "@/components/landing/social-proof";
 import { FinalCta } from "@/components/landing/final-cta";
 import { Footer } from "@/components/landing/footer";
+import { ChatbotWidget } from "@/components/chatbot/chatbot-widget";
 
 export default function Home() {
   return (
@@ -22,6 +23,7 @@ export default function Home() {
       <SocialProof />
       <FinalCta />
       <Footer />
+      <ChatbotWidget />
     </main>
   );
 }

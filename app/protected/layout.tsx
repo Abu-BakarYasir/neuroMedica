@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/doctors/sidebar";
 import { DashboardLayout } from "@/components/doctors/dashboard-layout";
+import { ChatbotWidget } from "@/components/chatbot/chatbot-widget";
 
 export default function ProtectedLayout({
   children,
@@ -15,6 +16,9 @@ export default function ProtectedLayout({
       <div className="flex-1 overflow-hidden">
         <DashboardLayout>{children}</DashboardLayout>
       </div>
+
+      {/* Chatbot Widget */}
+      <ChatbotWidget />
     </main>
   );
 }
