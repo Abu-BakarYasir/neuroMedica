@@ -27,3 +27,4 @@ class ErrorResponse(BaseModel):
     code: Optional[str] = Field(None, description="Error code")
 
 
+

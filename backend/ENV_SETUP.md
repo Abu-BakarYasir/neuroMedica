@@ -27,3 +27,4 @@ Note: The existing Supabase variables should already be in your `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
 
+
