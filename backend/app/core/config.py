@@ -28,6 +28,19 @@ class Settings(BaseSettings):
     dense_weight: float = 1.0
     sparse_weight: float = 1.0
 
+    # Reranking
+    reranker_model: str = "BAAI/bge-reranker-base"
+
+    # Generation (Claude API)
+    anthropic_api_key: str = ""
+    claude_model: str = "claude-sonnet-4-20250514"
+    claude_max_tokens: int = 2048
+
+    # Knowledge Graph (Neo4j)
+    neo4j_uri: str = ""
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = ""
+
     # App settings
     app_name: str = "NeuroMedica Chat API"
     app_version: str = "1.0.0"

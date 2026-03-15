@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from app.core.config import settings
-from app.api import chat, ingestion, retrieval
+from app.api import chat, ingestion, retrieval, reranking
 
 # Configure logging
 logging.basicConfig(
@@ -29,6 +29,7 @@ app.add_middleware(
 app.include_router(chat.router)
 app.include_router(ingestion.router)
 app.include_router(retrieval.router)
+app.include_router(reranking.router)
 
 
 @app.get("/")

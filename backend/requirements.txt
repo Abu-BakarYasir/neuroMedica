@@ -17,3 +17,9 @@ torch>=2.1.0
 # RAG - Retrieval pipeline
 rank-bm25>=0.2.2
 
+# RAG - Generation
+anthropic>=0.18.0
+
+# RAG - Knowledge Graph
+neo4j>=5.15.0
+
