@@ -3,6 +3,9 @@ from app.models.chat import ChatRequest, ChatResponse, ErrorResponse, Message
 from app.services.chat_service import chat_service
 from app.core.security import get_current_user
 from typing import Dict
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -37,7 +40,12 @@ async def send_message(
             message=response_text,
             conversation_id=conversation_id,
         )
+    except HTTPException:
+        # Re-raise HTTP exceptions (like auth errors)
+        raise
     except Exception as e:
+        # Log the full error for debugging
+        logger.error(f"Error processing chat message: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process message: {str(e)}",

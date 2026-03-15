@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_CHAT_API_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_CHAT_API_URL || "http://localhost:8001";
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,10 +40,11 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({
-        message: "Backend request failed",
+        detail: "Backend request failed",
       }));
+      // FastAPI returns errors as { detail: "..." }
       return NextResponse.json(
-        { error: error.message || "Failed to get response" },
+        { error: error.detail || error.message || "Failed to get response" },
         { status: response.status }
       );
     }
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
 
 
 
