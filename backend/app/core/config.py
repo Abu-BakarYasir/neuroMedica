@@ -6,11 +6,23 @@ from pydantic import computed_field, model_validator
 class Settings(BaseSettings):
     # Groq API
     groq_api_key: str
-    
+
     # Supabase
     supabase_url: str
     supabase_service_role_key: str
-    
+
+    # Qdrant
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: Optional[str] = None
+    qdrant_collection: str = "pubmed_articles"
+
+    # Ingestion
+    pubmed_email: str = "neuromedica@example.com"
+    pubmed_api_key: Optional[str] = None
+    embedding_model: str = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
+    chunk_size: int = 512
+    chunk_overlap: int = 64
+
     # App settings
     app_name: str = "NeuroMedica Chat API"
     app_version: str = "1.0.0"
