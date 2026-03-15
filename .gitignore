@@ -48,3 +48,9 @@ __pycache__/
 *.pyo
 .pytest_cache/
 backend/venv/
+
+# claude code tooling
+.claude/
+.claude-flow/
+.swarm/
+.mcp.json
