@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     chunk_size: int = 512
     chunk_overlap: int = 64
 
+    # Retrieval
+    rrf_k: int = 60
+    dense_weight: float = 1.0
+    sparse_weight: float = 1.0
+
     # App settings
     app_name: str = "NeuroMedica Chat API"
     app_version: str = "1.0.0"
