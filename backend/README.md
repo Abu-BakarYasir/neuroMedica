@@ -1,6 +1,6 @@
 # NeuroMedica Chat Backend
 
-FastAPI backend for the NeuroMedica chatbot feature with Anthropic Claude integration.
+FastAPI backend for the NeuroMedica chatbot feature with Groq API integration.
 
 ## Setup
 
@@ -15,7 +15,7 @@ FastAPI backend for the NeuroMedica chatbot feature with Anthropic Claude integr
    ```
 
 3. **Configure environment variables:**
-   - `ANTHROPIC_API_KEY`: Your Anthropic API key
+   - `GROQ_API_KEY`: Your Groq API key
    - `SUPABASE_URL`: Your Supabase project URL
    - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
 
@@ -66,7 +66,7 @@ Send a message to the chatbot.
 
 - `app/main.py`: FastAPI application entry point
 - `app/api/chat.py`: Chat API endpoints
-- `app/services/chat_service.py`: Chat logic with Anthropic integration
+- `app/services/chat_service.py`: Chat logic with Groq integration
 - `app/core/config.py`: Configuration management
 - `app/core/security.py`: Authentication middleware
 - `app/models/chat.py`: Pydantic models for request/response validation
@@ -78,5 +78,7 @@ The architecture is designed to easily add:
 - File uploads
 - X-ray image analysis
 - Chat history persistence
+
+
 
 

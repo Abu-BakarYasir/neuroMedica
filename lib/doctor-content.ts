@@ -229,3 +229,6 @@ export const medicalResourcesContent = {
 
 
 
+
+
+

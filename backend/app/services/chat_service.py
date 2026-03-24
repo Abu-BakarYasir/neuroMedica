@@ -1,25 +1,28 @@
-import anthropic
+from groq import Groq
 from typing import List, Optional
 import uuid
+import logging
 from app.core.config import settings
 from app.models.chat import Message
+
+logger = logging.getLogger(__name__)
 
 
 class ChatService:
     def __init__(self):
-        self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        self.model = "claude-3-5-sonnet-20241022"  # Latest Claude model
+        self.client = Groq(api_key=settings.groq_api_key)
+        self.model = "llama3-70b-8192"  # Groq model
     
     def generate_conversation_id(self) -> str:
         """Generate a unique conversation ID."""
         return str(uuid.uuid4())
     
-    def format_messages_for_anthropic(
+    def format_messages_for_groq(
         self, history: List[Message], current_message: str
     ) -> List[dict]:
         """
-        Format messages for Anthropic API.
-        Anthropic expects messages in a specific format.
+        Format messages for Groq API.
+        Groq expects messages in a specific format.
         """
         messages = []
         
@@ -46,7 +49,7 @@ class ChatService:
         history: Optional[List[Message]] = None,
     ) -> tuple[str, str]:
         """
-        Get chat response from Anthropic Claude.
+        Get chat response from Groq API.
         
         Returns:
             tuple: (response_message, conversation_id)
@@ -57,8 +60,8 @@ class ChatService:
         history = history or []
         
         try:
-            # Format messages for Anthropic
-            formatted_messages = self.format_messages_for_anthropic(history, message)
+            # Format messages for Groq
+            formatted_messages = self.format_messages_for_groq(history, message)
             
             # System prompt for medical assistant
             system_prompt = """You are Med Assistant, a helpful AI assistant for NeuroMedica, 
@@ -75,27 +78,32 @@ Guidelines:
 - Do not provide diagnoses or treatment plans for specific individuals
 """
             
-            # Call Anthropic API
-            response = self.client.messages.create(
+            # Call Groq API
+            response = self.client.chat.completions.create(
                 model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    *formatted_messages
+                ],
                 max_tokens=1024,
-                system=system_prompt,
-                messages=formatted_messages,
+                temperature=0.7,
             )
             
             # Extract response text
-            response_text = ""
-            if response.content:
-                for content_block in response.content:
-                    if hasattr(content_block, "text"):
-                        response_text += content_block.text
+            if not response.choices or len(response.choices) == 0:
+                logger.error("Groq API returned no choices")
+                raise Exception("No response from Groq API")
+            
+            response_text = response.choices[0].message.content
+            if not response_text:
+                logger.error("Groq API returned empty response")
+                raise Exception("Empty response from Groq API")
             
             return response_text, conversation_id
             
-        except anthropic.APIError as e:
-            raise Exception(f"Anthropic API error: {str(e)}")
         except Exception as e:
-            raise Exception(f"Failed to generate response: {str(e)}")
+            logger.error(f"Groq API error: {str(e)}", exc_info=True)
+            raise Exception(f"Groq API error: {str(e)}")
 
 
 # Singleton instance

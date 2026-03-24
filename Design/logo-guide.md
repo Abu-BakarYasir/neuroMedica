@@ -366,3 +366,6 @@ import Image from 'next/image';
 **Gradient**: Pink to Orange (#FFA8C8 → #FF4F34)
 
 
+
+
+

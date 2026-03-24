@@ -146,13 +146,9 @@ export function Sidebar({ className }: { className?: string }) {
       {/* Logo Header Section - Fixed at top */}
       <div className="flex items-center justify-between mb-[29px] flex-shrink-0">
         {!isCollapsed && (
-          <Image
-            src="/assets/icons/Logo.svg"
-            alt="Lynx Flow Health"
-            width={156}
-            height={24}
-            className="object-contain"
-          />
+          <span className="text-xl font-semibold text-[#212121]">
+            Neuro medica
+          </span>
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}

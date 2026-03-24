@@ -5,7 +5,7 @@
 Create a `.env` file in the `backend/` directory with the following variables:
 
 ```env
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 APP_NAME=NeuroMedica Chat API
@@ -25,5 +25,7 @@ NEXT_PUBLIC_CHAT_API_URL=http://localhost:8000
 Note: The existing Supabase variables should already be in your `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+
+
 
 

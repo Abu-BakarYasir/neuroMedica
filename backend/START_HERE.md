@@ -53,3 +53,6 @@ curl http://localhost:8000/health
 - **Authentication errors**: Verify your Supabase credentials are correct
 
 
+
+
+
