@@ -1233,15 +1233,15 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { patientManagementContent } from "@/lib/doctor-content";
-import { Plus, UploadCloud, Loader2, FileText, Search, User } from "lucide-react";
+import { Plus, UploadCloud, Loader2, FileText, Search, User, Trash2 } from "lucide-react";
 
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from "@/lib/supabase/client";
 
 import {
   Dialog,
@@ -1266,10 +1266,7 @@ function TrendIcon({ trend }: { trend: "up" | "down" | "neutral" }) {
 }
 
 export function PatientManagement() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-  );
+  const supabase = useMemo(() => createClient(), []);
 
   // --- State Management ---
   const [file, setFile] = useState<File | null>(null); // URL state is gone!
@@ -1282,21 +1279,80 @@ export function PatientManagement() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const fetchPatients = async () => {
-    setIsFetching(true);
-    const { data, error } = await supabase
-      .from("prescriptions")
-      .select("*")
-      .order("created_at", { ascending: false });
+  const fetchPatients = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!opts?.silent) setIsFetching(true);
+      const { data, error } = await supabase
+        .from("prescriptions")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (!error && data) setSavedPatients(data);
-    setIsFetching(false);
-  };
+      if (!error && data) setSavedPatients(data);
+      if (!opts?.silent) setIsFetching(false);
+    },
+    [supabase]
+  );
 
   useEffect(() => {
     fetchPatients();
-  }, []);
+  }, [fetchPatients]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("prescriptions-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "prescriptions" },
+        () => {
+          fetchPatients({ silent: true });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, fetchPatients]);
+
+  const activePatientsCount = useMemo(() => {
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return savedPatients.filter((p) => new Date(p.created_at).getTime() >= cutoff).length;
+  }, [savedPatients]);
+
+  const newThisMonthCount = useMemo(() => {
+    const now = new Date();
+    return savedPatients.filter((p) => {
+      const d = new Date(p.created_at);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+  }, [savedPatients]);
+
+  const getStatDisplayValue = (label: string, fallback: number) => {
+    if (label === "Total Patients") return savedPatients.length;
+    if (label === "Active Patients") return activePatientsCount;
+    if (label === "New This Month") return newThisMonthCount;
+    return fallback;
+  };
+
+  const handleDeletePatient = async (e: React.MouseEvent, patient: { id: string; patient_name?: string }) => {
+    e.stopPropagation();
+    const name = patient.patient_name || "this record";
+    if (!confirm(`Delete patient record for ${name}? This cannot be undone.`)) return;
+
+    setDeletingId(patient.id);
+    const { error } = await supabase.from("prescriptions").delete().eq("id", patient.id);
+    setDeletingId(null);
+
+    if (error) {
+      alert(error.message || "Could not delete the record.");
+      return;
+    }
+
+    if (selectedPatient?.id === patient.id) setSelectedPatient(null);
+    fetchPatients({ silent: true });
+  };
 
   // --- NEW: Automated OCR Scan Logic ---
   const handleScan = async () => {
@@ -1356,7 +1412,7 @@ export function PatientManagement() {
   });
 
   return (
-    <section className="mb-6">
+    <section id="prescription-ocr" className="mb-6 scroll-mt-24">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-[18px] font-medium text-[#212121] mb-2">
@@ -1507,10 +1563,10 @@ export function PatientManagement() {
                 </div>
                 <div className="space-y-1">
                   <div className="text-[40px] font-bold leading-none text-[#212121]">
-                    {stat.label === "Total Patients" ? savedPatients.length : stat.value}
+                    {getStatDisplayValue(stat.label, stat.value)}
                   </div>
                   <div className="flex items-center gap-1 text-xs">
-                    <TrendIcon trend={stat.trend} />
+                    <TrendIcon trend={stat.trend as "up" | "down" | "neutral"} />
                     <span className="text-[#212121]">{stat.comparison}</span>
                   </div>
                 </div>
@@ -1553,6 +1609,7 @@ export function PatientManagement() {
                 <th className="px-5 py-3 font-medium">Date Scanned</th>
                 <th className="px-5 py-3 font-medium">Prescription Date</th>
                 <th className="px-5 py-3 font-medium">Medications Count</th>
+                <th className="px-5 py-3 font-medium w-[100px] text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EDEDED]">
@@ -1581,11 +1638,28 @@ export function PatientManagement() {
                         {patient.medications ? patient.medications.length : 0} prescribed
                       </span>
                     </td>
+                    <td className="px-5 py-3 text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        disabled={deletingId === patient.id}
+                        aria-label="Delete patient record"
+                        onClick={(e) => handleDeletePatient(e, patient)}
+                      >
+                        {deletingId === patient.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-5 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-5 py-8 text-center text-gray-500">
                     {searchQuery ? "No patients match your search." : "No patient records found. Scan a prescription to get started."}
                   </td>
                 </tr>

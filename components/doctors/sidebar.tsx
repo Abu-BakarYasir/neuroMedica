@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   mainNavigationItems,
+  clinicalToolsSidebarItems,
   settingsHelpNavigationItems,
 } from "@/lib/sidebar-navigation";
 
@@ -169,6 +170,18 @@ export function Sidebar({ className }: { className?: string }) {
         {/* Main Navigation */}
         <nav className="space-y-[2px] mb-3">
           {mainNavigationItems.map((item) => renderNavigationItem(item))}
+        </nav>
+
+        {!isCollapsed && (
+          <p
+            className="text-[11px] text-[#838383] mb-1 px-2 leading-[1.15]"
+            style={{ letterSpacing: "0.5%" }}
+          >
+            Clinical tools
+          </p>
+        )}
+        <nav className="space-y-[2px] mb-3">
+          {clinicalToolsSidebarItems.map((item) => renderNavigationItem(item))}
         </nav>
 
         {/* Settings & Help Section */}

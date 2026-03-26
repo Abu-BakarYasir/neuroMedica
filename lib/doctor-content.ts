@@ -57,7 +57,7 @@ export const clinicalToolsContent = {
       name: "Chest X-ray Analysis",
       description: "Multi-label classification with visual explanations",
       icon: "Stethoscope",
-      href: "#",
+      href: "/protected/chest-x-ray",
       color: "from-neuro-primary/10 to-neuro-primary/5",
     },
     {
@@ -65,7 +65,7 @@ export const clinicalToolsContent = {
       name: "ECG Signal Analysis",
       description: "Rhythm detection and interval analysis",
       icon: "Activity",
-      href: "#",
+      href: "/protected/ecg-signal-analysis",
       color: "from-blue-100 to-blue-50",
     },
     {
@@ -73,7 +73,7 @@ export const clinicalToolsContent = {
       name: "Medical Q&A",
       description: "Reference-grounded answers with citations",
       icon: "BookOpen",
-      href: "#",
+      href: "/protected/medical-qa",
       color: "from-green-100 to-green-50",
     },
     {
@@ -81,7 +81,7 @@ export const clinicalToolsContent = {
       name: "Medical OCR",
       description: "Extract data from prescriptions and notes",
       icon: "FileText",
-      href: "#",
+      href: "/protected/doctors#prescription-ocr",
       color: "from-purple-100 to-purple-50",
     },
     {
@@ -89,7 +89,7 @@ export const clinicalToolsContent = {
       name: "Symptom Explorer",
       description: "Symptom-to-disease mapping with ontologies",
       icon: "Search",
-      href: "#",
+      href: "/protected/medical-qa",
       color: "from-orange-100 to-orange-50",
     },
     {
@@ -97,7 +97,7 @@ export const clinicalToolsContent = {
       name: "Report Generator",
       description: "Create structured medical reports",
       icon: "FileCheck",
-      href: "#",
+      href: "/protected/chat",
       color: "from-pink-100 to-pink-50",
     },
   ],

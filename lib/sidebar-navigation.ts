@@ -20,8 +20,33 @@ export const mainNavigationItems: NavigationItem[] = [
   {
     id: "chatbot",
     name: "Chatbot",
-    href: "/chat",
+    href: "/protected/chat",
     icon: "/assets/sidebar-icons/chatbot-icon.svg",
+    section: "main",
+  },
+];
+
+/** Sidebar links for the three flagship clinical AI tools (same as dashboard cards). */
+export const clinicalToolsSidebarItems: NavigationItem[] = [
+  {
+    id: "chest-xray",
+    name: "Chest X-ray Analysis",
+    href: "/protected/chest-x-ray",
+    icon: "/assets/sidebar-icons/chest-xray-icon.svg",
+    section: "main",
+  },
+  {
+    id: "ecg-signal",
+    name: "ECG Signal Analysis",
+    href: "/protected/ecg-signal-analysis",
+    icon: "/assets/sidebar-icons/ecg-icon.svg",
+    section: "main",
+  },
+  {
+    id: "medical-qa",
+    name: "Medical Q&A",
+    href: "/protected/medical-qa",
+    icon: "/assets/sidebar-icons/medical-qa-icon.svg",
     section: "main",
   },
 ];
@@ -60,6 +85,7 @@ export const logoutNavigationItem: NavigationItem = {
 
 export const allNavigationItems = [
   ...mainNavigationItems,
+  ...clinicalToolsSidebarItems,
   ...settingsHelpNavigationItems,
   logoutNavigationItem,
 ];
