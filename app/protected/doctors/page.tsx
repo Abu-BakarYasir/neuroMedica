@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { SearchBar } from "@/components/doctors/search-bar";
 import { PatientManagement } from "@/components/doctors/patient-management";
 import { ClinicalTools } from "@/components/doctors/clinical-tools";
-import { RecentActivity } from "@/components/doctors/recent-activity";
 import { Notifications } from "@/components/doctors/notifications";
 import { MedicalResources } from "@/components/doctors/medical-resources";
 import { doctorWelcomeContent } from "@/lib/doctor-content";
@@ -55,14 +54,8 @@ export default function DoctorsPage() {
       {/* Clinical Tools Section */}
       <ClinicalTools />
 
-      {/* Two Column Layout for Recent Activity and Notifications */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div>
-          <RecentActivity />
-        </div>
-        <div>
-          <Notifications />
-        </div>
+      <div className="mb-6">
+        <Notifications />
       </div>
 
       {/* Medical Resources Section */}

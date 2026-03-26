@@ -23,7 +23,7 @@ export function ChatbotHeader({
     if (onExpand) {
       onExpand();
     } else {
-      router.push("/chat");
+      router.push("/protected/chat");
     }
   };
 

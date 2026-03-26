@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { ChatWindow } from "./chat-window";
 import { ChatbotPreviewWidget } from "./chatbot-preview-widget";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function ChatbotWidget() {
+  const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
@@ -23,6 +25,10 @@ export function ChatbotWidget() {
   }, []);
 
   if (isChecking || !isAuthenticated) {
+    return null;
+  }
+
+  if (pathname === "/protected/chat") {
     return null;
   }
 
