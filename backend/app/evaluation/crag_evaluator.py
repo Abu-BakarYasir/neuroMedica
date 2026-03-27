@@ -24,6 +24,12 @@ logger = logging.getLogger(__name__)
 HIGH_CONFIDENCE_THRESHOLD = 0.7
 LOW_CONFIDENCE_THRESHOLD = 0.3
 
+# Minimum absolute reranker score to consider a doc potentially relevant.
+# Below this, even the best-scoring doc is treated as irrelevant regardless
+# of relative normalization. BGE-reranker-base outputs logits where scores
+# above ~0.5 indicate likely relevance; well below that means no match.
+MIN_ABSOLUTE_RERANKER_SCORE = 0.1
+
 
 class CRAGEvaluator:
     """Evaluates retrieval quality and decides whether to proceed, refine, or fallback.
@@ -39,10 +45,12 @@ class CRAGEvaluator:
         high_threshold: float = HIGH_CONFIDENCE_THRESHOLD,
         low_threshold: float = LOW_CONFIDENCE_THRESHOLD,
         min_accepted_docs: int = 2,
+        min_absolute_score: float = MIN_ABSOLUTE_RERANKER_SCORE,
     ):
         self.high_threshold = high_threshold
         self.low_threshold = low_threshold
         self.min_accepted_docs = min_accepted_docs
+        self.min_absolute_score = min_absolute_score
 
     def evaluate(
         self,
@@ -94,20 +102,30 @@ class CRAGEvaluator:
     def _evaluate_documents(
         self, docs: list[RerankResult]
     ) -> list[DocumentEvaluation]:
-        """Score each document's relevance using reranker scores."""
+        """Score each document's relevance using reranker scores.
+
+        Uses a combination of absolute and relative scoring:
+        - If the best reranker score is below min_absolute_score, ALL docs
+          are treated as low confidence (the corpus simply doesn't have relevant results).
+        - Otherwise, scores are normalized relative to each other.
+        """
         evaluations = []
 
-        # Normalize reranker scores to 0-1 range
         scores = [d.rerank_score for d in docs]
-        max_score = max(scores) if scores else 1.0
+        max_score = max(scores) if scores else 0.0
         min_score = min(scores) if scores else 0.0
         score_range = max_score - min_score
 
+        # If the best absolute reranker score is very low, nothing is relevant
+        all_irrelevant = max_score < self.min_absolute_score
+
         for doc in docs:
-            # When all scores are equal, treat them as high confidence
-            # (the reranker scored them all the same = equally relevant)
-            if score_range == 0:
-                confidence = 1.0 if max_score > 0 else 0.0
+            if all_irrelevant:
+                # Absolute score too low — corpus doesn't contain relevant results
+                confidence = max_score  # Use raw score as confidence (will be < 0.1)
+            elif score_range == 0:
+                # All scores identical — use absolute score as guide
+                confidence = min(1.0, max_score) if max_score > self.min_absolute_score else 0.0
             else:
                 normalized = (doc.rerank_score - min_score) / score_range
                 confidence = max(0.0, min(1.0, normalized))
@@ -124,7 +142,8 @@ class CRAGEvaluator:
                 chunk_id=doc.chunk_id,
                 relevance=relevance,
                 confidence=round(confidence, 4),
-                reasoning=f"Rerank score {doc.rerank_score:.4f} -> confidence {confidence:.4f}",
+                reasoning=f"Rerank score {doc.rerank_score:.4f} -> confidence {confidence:.4f}"
+                          + (" [below absolute threshold]" if all_irrelevant else ""),
             ))
 
         return evaluations
