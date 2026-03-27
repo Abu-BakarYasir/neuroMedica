@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     # Ingestion
     pubmed_email: str = "neuromedica@example.com"
     pubmed_api_key: Optional[str] = None
-    embedding_model: str = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
+    # Sentence-transformers–compatible PubMed-tuned model (avoids broken HF redirects for
+    # microsoft/BiomedNLP-PubMedBERT-* raw checkpoints). Override via EMBEDDING_MODEL if needed.
+    embedding_model: str = "pritamdeka/S-PubMedBert-MS-MARCO"
     chunk_size: int = 512
     chunk_overlap: int = 64
 
