@@ -10,6 +10,7 @@ export function useChat() {
     isLoading: false,
     error: null,
     conversationId: null,
+    useRag: false,
   });
 
   const addMessage = useCallback((message: Omit<Message, "id" | "timestamp">) => {
@@ -46,15 +47,21 @@ export function useChat() {
           content: msg.content,
         }));
 
+        const useRag = state.useRag;
         const response = await sendMessage(
           content.trim(),
           state.conversationId || undefined,
-          history
+          history,
+          useRag
         );
 
         addMessage({
           role: "assistant",
           content: response.message,
+          usedRag: useRag,
+          citations: response.citations,
+          confidence: response.confidence,
+          disclaimer: response.disclaimer,
         });
 
         setState((prev) => ({
@@ -77,22 +84,29 @@ export function useChat() {
         }));
       }
     },
-    [state.messages, state.conversationId, state.isLoading, addMessage]
+    [state.messages, state.conversationId, state.isLoading, state.useRag, addMessage]
   );
 
   const clearChat = useCallback(() => {
-    setState({
+    setState((prev) => ({
       messages: [],
       isLoading: false,
       error: null,
       conversationId: null,
-    });
+      useRag: prev.useRag,
+    }));
+  }, []);
+
+  const setUseRag = useCallback((value: boolean) => {
+    setState((prev) => ({ ...prev, useRag: value }));
   }, []);
 
   return {
     messages: state.messages,
     isLoading: state.isLoading,
     error: state.error,
+    useRag: state.useRag,
+    setUseRag,
     sendMessage: sendChatMessage,
     clearChat,
   };
