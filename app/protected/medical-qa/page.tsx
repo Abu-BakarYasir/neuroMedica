@@ -1,9 +1,10 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ClinicalComingSoon } from "@/components/doctors/clinical-coming-soon";
 import { BookOpen } from "lucide-react";
 
-export default async function MedicalQaPage() {
+async function MedicalQaContent() {
   const supabase = await createClient();
   const {
     data: { session },
@@ -19,5 +20,13 @@ export default async function MedicalQaPage() {
       description="Reference-grounded answers with citations"
       Icon={BookOpen}
     />
+  );
+}
+
+export default function MedicalQaPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+      <MedicalQaContent />
+    </Suspense>
   );
 }

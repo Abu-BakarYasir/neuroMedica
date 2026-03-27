@@ -34,6 +34,11 @@ yarn-error.log*
 .env*.local
 .env
 .env.local
+backend/.env
+
+# Keep .env.example files (they contain no secrets)
+!.env.example
+!backend/.env.example
 
 # vercel
 .vercel

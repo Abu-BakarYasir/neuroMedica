@@ -1,9 +1,10 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ClinicalComingSoon } from "@/components/doctors/clinical-coming-soon";
 import { Stethoscope } from "lucide-react";
 
-export default async function ChestXRayPage() {
+async function ChestXRayContent() {
   const supabase = await createClient();
   const {
     data: { session },
@@ -19,5 +20,13 @@ export default async function ChestXRayPage() {
       description="Multi-label classification with visual explanations"
       Icon={Stethoscope}
     />
+  );
+}
+
+export default function ChestXRayPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+      <ChestXRayContent />
+    </Suspense>
   );
 }

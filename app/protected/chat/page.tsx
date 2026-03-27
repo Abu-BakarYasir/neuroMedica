@@ -1,8 +1,9 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { FullPageChat } from "@/components/chatbot/full-page-chat";
 
-export default async function ChatPage() {
+async function ChatContent() {
   const supabase = await createClient();
   const {
     data: { session },
@@ -13,4 +14,12 @@ export default async function ChatPage() {
   }
 
   return <FullPageChat />;
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+      <ChatContent />
+    </Suspense>
+  );
 }
