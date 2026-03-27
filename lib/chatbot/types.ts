@@ -51,6 +51,28 @@ export interface ChatApiError {
   status?: number;
 }
 
+// ── Persistent conversation types ──
+
+export interface Conversation {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbMessage {
+  id: string;
+  conversation_id: string;
+  role: MessageRole;
+  content: string;
+  used_rag: boolean;
+  citations: CitationItem[] | null;
+  confidence: string | null;
+  disclaimer: string | null;
+  created_at: string;
+}
+
 
 
 
