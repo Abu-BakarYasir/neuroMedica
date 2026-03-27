@@ -106,6 +106,33 @@ Guidelines:
             raise Exception(f"Groq API error: {str(e)}")
 
 
+    def generate_title(self, message: str) -> str:
+        """Generate a short conversation title from the first user message."""
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "Generate a very short title (max 6 words) for a conversation "
+                            "that starts with the following message. Return ONLY the title, "
+                            "no quotes, no punctuation at the end."
+                        ),
+                    },
+                    {"role": "user", "content": message},
+                ],
+                max_tokens=20,
+                temperature=0.5,
+            )
+
+            title = (response.choices[0].message.content or "").strip().strip('"\'')
+            return title if title else message[:50]
+        except Exception as e:
+            logger.error(f"Title generation error: {e}")
+            return message[:50] if len(message) > 50 else message
+
+
 # Singleton instance
 chat_service = ChatService()
 

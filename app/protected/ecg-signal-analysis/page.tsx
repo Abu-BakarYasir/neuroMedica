@@ -1,9 +1,10 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ClinicalComingSoon } from "@/components/doctors/clinical-coming-soon";
 import { Activity } from "lucide-react";
 
-export default async function EcgSignalAnalysisPage() {
+async function EcgContent() {
   const supabase = await createClient();
   const {
     data: { session },
@@ -19,5 +20,13 @@ export default async function EcgSignalAnalysisPage() {
       description="Rhythm detection and interval analysis"
       Icon={Activity}
     />
+  );
+}
+
+export default function EcgSignalAnalysisPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+      <EcgContent />
+    </Suspense>
   );
 }

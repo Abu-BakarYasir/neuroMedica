@@ -1,0 +1,8 @@
+# Railway project-level config
+# Each service is configured below. Railway uses this to detect
+# how to build and deploy each service in the monorepo.
+
+# This file tells Railway this is a monorepo with 2 services.
+# You must create 2 services in the Railway dashboard:
+#   1. "frontend" — root directory: /
+#   2. "backend"  — root directory: /backend

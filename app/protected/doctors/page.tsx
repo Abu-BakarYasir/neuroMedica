@@ -49,7 +49,9 @@ export default function DoctorsPage() {
       </div>
 
       {/* Patient Management Section */}
-      <PatientManagement />
+      <Suspense fallback={<div className="h-32" />}>
+        <PatientManagement />
+      </Suspense>
 
       {/* Clinical Tools Section */}
       <ClinicalTools />

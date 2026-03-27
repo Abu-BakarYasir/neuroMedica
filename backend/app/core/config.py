@@ -47,7 +47,10 @@ class Settings(BaseSettings):
     app_name: str = "NeuroMedica Chat API"
     app_version: str = "1.0.0"
     debug: bool = False
-    
+
+    # Railway sets this automatically for public services
+    railway_public_domain: Optional[str] = None
+
     # CORS - stored as string in env file
     allowed_origins_str: str = "http://localhost:3000,http://localhost:3001"
     

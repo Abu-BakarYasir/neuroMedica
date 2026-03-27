@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from app.models.chat import ChatRequest, ChatResponse, CitationItem, ErrorResponse, Message
 from app.services.chat_service import chat_service
 from app.core.security import get_current_user
@@ -56,6 +57,30 @@ async def send_message(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process message: {str(e)}",
         )
+
+
+class TitleRequest(BaseModel):
+    message: str
+
+
+class TitleResponse(BaseModel):
+    title: str
+
+
+@router.post("/generate-title", response_model=TitleResponse)
+async def generate_title(
+    request: TitleRequest,
+    user: Dict = Depends(get_current_user),
+) -> TitleResponse:
+    """Generate a short title for a conversation from the first message."""
+    try:
+        title = chat_service.generate_title(request.message)
+        return TitleResponse(title=title)
+    except Exception as e:
+        logger.error(f"Title generation error: {e}", exc_info=True)
+        # Fallback to truncated message
+        fallback = request.message[:50] + ("..." if len(request.message) > 50 else "")
+        return TitleResponse(title=fallback)
 
 
 async def _handle_rag_query(

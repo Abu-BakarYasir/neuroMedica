@@ -91,7 +91,7 @@ export function Notifications() {
                     </div>
                   ) : (
                     <div className="mt-0.5">
-                      <NotificationIcon type={notification.type} />
+                      <NotificationIcon type={notification.type as "alert" | "info" | "reminder"} />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
@@ -110,7 +110,7 @@ export function Notifications() {
                       <span className="text-xs text-[#8D8D8D]">
                         {notification.time}
                       </span>
-                      <PriorityBadge priority={notification.priority} />
+                      <PriorityBadge priority={notification.priority as "high" | "medium" | "low"} />
                     </div>
                   </div>
                 </div>
