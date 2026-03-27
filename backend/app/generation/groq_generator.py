@@ -11,7 +11,11 @@ from groq import Groq
 
 from app.reranking.models import RerankResult
 from app.generation.models import Citation, GenerationResult
-from app.generation.claude_generator import SYSTEM_PROMPT, NO_CONTEXT_PROMPT
+from app.generation.claude_generator import (
+    INTENT_PROMPTS,
+    NO_CONTEXT_PROMPT,
+    _CONFIDENCE_INSTRUCTIONS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,15 +39,18 @@ class GroqGenerator:
         context_chunks: list[RerankResult],
         confidence: str = "medium",
         conversation_history: Optional[list[dict]] = None,
+        query_intent: str = "general",
     ) -> GenerationResult:
         """Generate a grounded answer with citations from retrieved context."""
         # Build citations
         citations = self._build_citations(context_chunks)
 
-        # Build the user message with context
+        # Select system prompt based on intent
         if context_chunks:
-            user_message = self._build_context_message(query, context_chunks, citations)
-            system = SYSTEM_PROMPT
+            system = INTENT_PROMPTS.get(query_intent, INTENT_PROMPTS["general"])
+            user_message = self._build_context_message(
+                query, context_chunks, citations, confidence
+            )
         else:
             user_message = f"User question: {query}"
             system = NO_CONTEXT_PROMPT
@@ -55,8 +62,8 @@ class GroqGenerator:
         messages.append({"role": "user", "content": user_message})
 
         logger.info(
-            "Generating answer via Groq (model=%s, context_chunks=%d, confidence=%s)",
-            self.model, len(context_chunks), confidence,
+            "Generating answer via Groq (model=%s, context_chunks=%d, confidence=%s, intent=%s)",
+            self.model, len(context_chunks), confidence, query_intent,
         )
 
         response = self._client.chat.completions.create(
@@ -102,22 +109,36 @@ class GroqGenerator:
         query: str,
         chunks: list[RerankResult],
         citations: list[Citation],
+        confidence: str = "medium",
     ) -> str:
-        """Build the user message with numbered source documents."""
+        """Build the user message with numbered source documents and confidence context."""
         pmid_to_num = {c.pmid: c.index for c in citations}
 
         source_blocks = []
         for chunk in chunks:
             cite_num = pmid_to_num.get(chunk.pmid, "?")
+            if chunk.rerank_score > 0.7:
+                relevance_tag = "HIGHLY RELEVANT"
+            elif chunk.rerank_score > 0.3:
+                relevance_tag = "MODERATELY RELEVANT"
+            else:
+                relevance_tag = "TANGENTIALLY RELEVANT"
+
             source_blocks.append(
-                f"[Source {cite_num}] (PMID: {chunk.pmid}, Section: {chunk.section})\n"
+                f"[Source {cite_num}] (PMID: {chunk.pmid}, "
+                f"Section: {chunk.section}, Relevance: {relevance_tag})\n"
                 f"{chunk.text}"
             )
 
         sources_text = "\n\n---\n\n".join(source_blocks)
 
+        confidence_note = _CONFIDENCE_INSTRUCTIONS.get(
+            confidence, _CONFIDENCE_INSTRUCTIONS["medium"]
+        )
+
         return (
-            f"Based on the following medical literature sources, answer the question below.\n\n"
+            f"RETRIEVAL CONFIDENCE: {confidence.upper()}\n"
+            f"{confidence_note}\n\n"
             f"SOURCES:\n{sources_text}\n\n"
             f"---\n\n"
             f"QUESTION: {query}"

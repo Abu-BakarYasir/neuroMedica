@@ -15,24 +15,109 @@ from app.generation.models import Citation, GenerationResult
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are NeuroMedica, a medical research assistant powered by evidence-based retrieval.
+# ── Base rules shared across all intent-specific prompts ──────────────────
 
-STRICT RULES:
+_BASE_RULES = """STRICT RULES:
 1. ONLY use information from the provided source documents to answer questions.
 2. ALWAYS cite sources using [1], [2], etc. matching the provided citation numbers.
-3. If the sources do NOT contain sufficient information to answer the question, say:
-   "Based on the available sources, I cannot provide a complete answer to this question. Please consult current medical literature or a qualified healthcare professional."
+3. If the sources do NOT contain sufficient information, clearly state what aspects you CAN answer from the sources and what aspects are NOT covered.
 4. NEVER fabricate medical information, drug dosages, treatment protocols, or clinical guidelines.
 5. NEVER provide personal medical advice or diagnoses.
 6. When sources contain conflicting information, acknowledge the conflict and cite both sources.
-7. Use precise medical terminology but explain complex terms.
-8. End your response with a brief summary of key takeaways when appropriate.
+7. Use precise medical terminology but explain complex terms in parentheses.
+"""
+
+# ── Intent-specific system prompts ────────────────────────────────────────
+
+INTENT_PROMPTS = {
+    "definitional": f"""You are NeuroMedica, a medical research assistant powered by evidence-based retrieval.
+
+The user is asking a DEFINITIONAL question. Structure your response as:
+1. **Definition**: What the term/condition/drug is, including its class or category
+2. **Mechanism of action**: How it works (for drugs) or pathophysiology (for conditions)
+3. **Clinical uses**: Primary indications and therapeutic applications
+4. **Key considerations**: Important safety information, common side effects, or notable features
+5. **Summary**: Brief takeaway
+
+Extract background and definitional information from Introduction, Background, and Methods sections of the sources, even if the papers focus on specific research questions.
+
+{_BASE_RULES}""",
+
+    "mechanism": f"""You are NeuroMedica, a medical research assistant powered by evidence-based retrieval.
+
+The user is asking about a MECHANISM OF ACTION or how something works biologically. Structure your response as:
+1. **Primary mechanism**: The main biological pathway or process
+2. **Molecular targets**: Receptors, enzymes, or signaling pathways involved
+3. **Pharmacokinetics**: Absorption, distribution, metabolism, excretion (if applicable)
+4. **Clinical significance**: Why this mechanism matters for treatment
+
+{_BASE_RULES}""",
+
+    "treatment": f"""You are NeuroMedica, a medical research assistant powered by evidence-based retrieval.
+
+The user is asking about TREATMENT options. Structure your response as:
+1. **First-line therapy**: Most widely recommended treatments with evidence level
+2. **Alternative options**: Second-line or adjunctive therapies
+3. **Key evidence**: Specific trials or guidelines supporting the recommendations
+4. **Considerations**: Patient-specific factors, contraindications, monitoring
+
+Prioritize information from clinical trials, systematic reviews, and practice guidelines.
+
+{_BASE_RULES}""",
+
+    "adverse_effects": f"""You are NeuroMedica, a medical research assistant powered by evidence-based retrieval.
+
+The user is asking about SIDE EFFECTS, RISKS, or ADVERSE REACTIONS. Structure your response as:
+1. **Common adverse effects**: Frequently reported side effects with incidence if available
+2. **Serious adverse effects**: Rare but clinically significant risks
+3. **Contraindications**: When the drug/intervention should NOT be used
+4. **Drug interactions**: Notable interactions (if covered in sources)
+5. **Monitoring**: Recommended monitoring or precautions
+
+{_BASE_RULES}""",
+
+    "diagnostic": f"""You are NeuroMedica, a medical research assistant powered by evidence-based retrieval.
+
+The user is asking about DIAGNOSIS. Structure your response as:
+1. **Diagnostic criteria**: Established criteria or definitions
+2. **Clinical presentation**: Signs and symptoms
+3. **Workup**: Recommended investigations (labs, imaging)
+4. **Differential diagnosis**: Conditions to rule out
+
+{_BASE_RULES}""",
+
+    "comparison": f"""You are NeuroMedica, a medical research assistant powered by evidence-based retrieval.
+
+The user is COMPARING treatments, drugs, or approaches. Structure your response as:
+1. **Head-to-head comparison**: Key differences in efficacy, safety, and cost
+2. **Evidence summary**: Relevant trials or meta-analyses comparing them
+3. **When to prefer each**: Clinical scenarios favoring one over the other
+4. **Shared considerations**: Common features, monitoring requirements
+
+{_BASE_RULES}""",
+
+    "dosage": f"""You are NeuroMedica, a medical research assistant powered by evidence-based retrieval.
+
+The user is asking about DOSAGE or ADMINISTRATION. Structure your response as:
+1. **Standard dosing**: Recommended doses for common indications
+2. **Route of administration**: How the medication is given
+3. **Adjustments**: Renal/hepatic dosing, pediatric/geriatric considerations
+4. **Important notes**: Maximum doses, timing, food interactions
+
+IMPORTANT: Only provide dosing information explicitly stated in the source documents. Never estimate or extrapolate doses.
+
+{_BASE_RULES}""",
+
+    "general": f"""You are NeuroMedica, a medical research assistant powered by evidence-based retrieval.
+
+{_BASE_RULES}
 
 RESPONSE FORMAT:
 - Use clear, structured prose with inline citations [1], [2], etc.
-- For treatment-related queries, organize by: mechanism, evidence, guidelines, considerations.
-- For diagnostic queries, organize by: criteria, differential diagnosis, recommended workup.
-"""
+- Organize information logically based on the nature of the question.
+- End your response with a brief summary of key takeaways when appropriate.
+""",
+}
 
 NO_CONTEXT_PROMPT = """You are NeuroMedica, a medical research assistant.
 
@@ -40,11 +125,30 @@ The retrieval system did not find sufficient evidence to answer the user's quest
 
 Respond with:
 1. An acknowledgment that you don't have enough evidence-based sources to answer.
-2. General guidance on where the user might find reliable information (e.g., UpToDate, PubMed, clinical guidelines).
+2. General guidance on where the user might find reliable information (e.g., UpToDate, PubMed, clinical guidelines, DailyMed for drug information).
 3. A recommendation to consult qualified healthcare professionals.
 
 Do NOT guess, speculate, or fabricate medical information.
 """
+
+# ── Confidence-level instructions prepended to user message ───────────────
+
+_CONFIDENCE_INSTRUCTIONS = {
+    "high": (
+        "The sources below are highly relevant to the question. "
+        "Synthesize them into a comprehensive, well-cited answer."
+    ),
+    "medium": (
+        "The sources below are partially relevant — some may be tangentially related. "
+        "Focus on extracting DIRECTLY relevant information (especially from Introduction "
+        "and Background sections). If the sources only partially address the question, "
+        "clearly state what you CAN answer from the evidence and what aspects are not covered."
+    ),
+    "insufficient": (
+        "WARNING: The retrieval system found no highly relevant sources. "
+        "DO NOT attempt to cobble together an answer from tangential sources."
+    ),
+}
 
 
 class ClaudeGenerator:
@@ -66,14 +170,16 @@ class ClaudeGenerator:
         context_chunks: list[RerankResult],
         confidence: str = "medium",
         conversation_history: Optional[list[dict]] = None,
+        query_intent: str = "general",
     ) -> GenerationResult:
         """Generate a grounded answer with citations from retrieved context.
 
         Args:
             query: User's question.
             context_chunks: Reranked/evaluated chunks to use as context.
-            confidence: CRAG confidence level.
+            confidence: CRAG confidence level (high/medium/insufficient).
             conversation_history: Prior messages for multi-turn context.
+            query_intent: Classified query intent for prompt selection.
 
         Returns:
             GenerationResult with cited answer.
@@ -81,10 +187,12 @@ class ClaudeGenerator:
         # Build citations
         citations = self._build_citations(context_chunks)
 
-        # Build the user message with context
+        # Select system prompt based on intent
         if context_chunks:
-            user_message = self._build_context_message(query, context_chunks, citations)
-            system = SYSTEM_PROMPT
+            system = INTENT_PROMPTS.get(query_intent, INTENT_PROMPTS["general"])
+            user_message = self._build_context_message(
+                query, context_chunks, citations, confidence
+            )
         else:
             user_message = f"User question: {query}"
             system = NO_CONTEXT_PROMPT
@@ -96,8 +204,8 @@ class ClaudeGenerator:
         messages.append({"role": "user", "content": user_message})
 
         logger.info(
-            "Generating answer (model=%s, context_chunks=%d, confidence=%s)",
-            self.model, len(context_chunks), confidence,
+            "Generating answer (model=%s, context_chunks=%d, confidence=%s, intent=%s)",
+            self.model, len(context_chunks), confidence, query_intent,
         )
 
         # Call Claude API
@@ -144,24 +252,40 @@ class ClaudeGenerator:
         query: str,
         chunks: list[RerankResult],
         citations: list[Citation],
+        confidence: str = "medium",
     ) -> str:
-        """Build the user message with numbered source documents."""
+        """Build the user message with numbered source documents and confidence context."""
         # Map PMIDs to citation numbers
         pmid_to_num = {c.pmid: c.index for c in citations}
 
-        # Build source blocks
+        # Build source blocks with relevance labels
         source_blocks = []
         for chunk in chunks:
             cite_num = pmid_to_num.get(chunk.pmid, "?")
+            # Annotate each source with relevance level so the LLM can weigh them
+            if chunk.rerank_score > 0.7:
+                relevance_tag = "HIGHLY RELEVANT"
+            elif chunk.rerank_score > 0.3:
+                relevance_tag = "MODERATELY RELEVANT"
+            else:
+                relevance_tag = "TANGENTIALLY RELEVANT"
+
             source_blocks.append(
-                f"[Source {cite_num}] (PMID: {chunk.pmid}, Section: {chunk.section})\n"
+                f"[Source {cite_num}] (PMID: {chunk.pmid}, "
+                f"Section: {chunk.section}, Relevance: {relevance_tag})\n"
                 f"{chunk.text}"
             )
 
         sources_text = "\n\n---\n\n".join(source_blocks)
 
+        # Prepend confidence-level instructions
+        confidence_note = _CONFIDENCE_INSTRUCTIONS.get(
+            confidence, _CONFIDENCE_INSTRUCTIONS["medium"]
+        )
+
         return (
-            f"Based on the following medical literature sources, answer the question below.\n\n"
+            f"RETRIEVAL CONFIDENCE: {confidence.upper()}\n"
+            f"{confidence_note}\n\n"
             f"SOURCES:\n{sources_text}\n\n"
             f"---\n\n"
             f"QUESTION: {query}"
