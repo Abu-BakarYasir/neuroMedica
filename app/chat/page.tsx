@@ -1,16 +1,20 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { FullPageChat } from "@/components/chatbot/full-page-chat";
+import { Suspense } from "react";
+import { ChatPageInner } from "./chat-page-inner";
 
-export default async function ChatPage() {
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+function ChatLoadingFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 text-gray-600 text-sm">
+      Loading chat…
+    </div>
+  );
+}
 
-  if (!session) {
-    redirect("/auth/login");
-  }
-
-  return <FullPageChat />;
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<ChatLoadingFallback />}>
+      <ChatPageInner />
+    </Suspense>
+  );
 }
 
 
