@@ -6,11 +6,43 @@ from pydantic import computed_field, model_validator
 class Settings(BaseSettings):
     # Groq API
     groq_api_key: str
-    
+
     # Supabase
     supabase_url: str
     supabase_service_role_key: str
-    
+
+    # Qdrant
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: Optional[str] = None
+    qdrant_collection: str = "pubmed_articles"
+
+    # Ingestion
+    pubmed_email: str = "neuromedica@example.com"
+    pubmed_api_key: Optional[str] = None
+    # Sentence-transformers–compatible PubMed-tuned model (avoids broken HF redirects for
+    # microsoft/BiomedNLP-PubMedBERT-* raw checkpoints). Override via EMBEDDING_MODEL if needed.
+    embedding_model: str = "pritamdeka/S-PubMedBert-MS-MARCO"
+    chunk_size: int = 512
+    chunk_overlap: int = 64
+
+    # Retrieval
+    rrf_k: int = 60
+    dense_weight: float = 1.0
+    sparse_weight: float = 1.0
+
+    # Reranking
+    reranker_model: str = "BAAI/bge-reranker-base"
+
+    # Generation (Claude API)
+    anthropic_api_key: str = ""
+    claude_model: str = "claude-sonnet-4-20250514"
+    claude_max_tokens: int = 2048
+
+    # Knowledge Graph (Neo4j)
+    neo4j_uri: str = ""
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = ""
+
     # App settings
     app_name: str = "NeuroMedica Chat API"
     app_version: str = "1.0.0"

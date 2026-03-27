@@ -1,6 +1,18 @@
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
+  import { ChatPageInner } from "./chat-page-inner";      
+  
+  function ChatLoadingFallback() {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 text-gray-600 text-sm">
+        Loading chat…
+      </div>
+    );
+  }
 
-/** Chat uses the protected layout (sidebar) at /protected/chat */
-export default function ChatPage() {
-  redirect("/protected/chat");
-}
+  export default function ChatPage() {
+    return (
+      <Suspense fallback={<ChatLoadingFallback />}>
+        <ChatPageInner />
+      </Suspense>
+    );
+  }

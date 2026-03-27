@@ -22,7 +22,7 @@ export function ChatWindow({
   showInput = true,
   showCloseButton = false 
 }: ChatWindowProps) {
-  const { messages, isLoading, sendMessage } = useChat();
+  const { messages, isLoading, sendMessage, useRag, setUseRag } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -80,7 +80,14 @@ export function ChatWindow({
           </div>
         )}
       </div>
-      {showInput && <ChatInput onSend={sendMessage} isLoading={isLoading} />}
+      {showInput && (
+        <ChatInput
+          onSend={sendMessage}
+          isLoading={isLoading}
+          useRag={useRag}
+          onUseRagChange={setUseRag}
+        />
+      )}
     </div>
   );
 }

@@ -42,8 +42,16 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Python ignores
-venv/
-backend/venv/
-__pycache__/
-*.pyc
+ # python
+  __pycache__/
+  *.pyc
+  *.pyo
+  .pytest_cache/
+  venv/
+  backend/venv/
+
+  # claude code tooling
+  .claude/
+  .claude-flow/
+  .swarm/
+  .mcp.json

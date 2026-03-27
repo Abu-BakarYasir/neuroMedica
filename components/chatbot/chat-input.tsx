@@ -1,18 +1,27 @@
 "use client";
 
 import { useState, KeyboardEvent } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   isLoading?: boolean;
   disabled?: boolean;
+  useRag?: boolean;
+  onUseRagChange?: (value: boolean) => void;
 }
 
-export function ChatInput({ onSend, isLoading = false, disabled = false }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  isLoading = false,
+  disabled = false,
+  useRag = false,
+  onUseRagChange,
+}: ChatInputProps) {
   const [message, setMessage] = useState("");
 
   const handleSend = () => {
@@ -31,6 +40,30 @@ export function ChatInput({ onSend, isLoading = false, disabled = false }: ChatI
 
   return (
     <div className="border-t border-gray-200 p-4 bg-white">
+      {onUseRagChange && (
+        <div className="flex items-start gap-2 mb-3 px-0.5">
+          <Checkbox
+            id="use-rag-chat"
+            checked={useRag}
+            onCheckedChange={(v) => onUseRagChange(v === true)}
+            disabled={isLoading || disabled}
+            className="mt-0.5 border-neuro-primary data-[state=checked]:bg-neuro-primary data-[state=checked]:text-white"
+          />
+          <div className="flex-1 min-w-0">
+            <Label
+              htmlFor="use-rag-chat"
+              className="text-sm font-medium text-gray-800 cursor-pointer flex items-center gap-1.5"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-neuro-primary shrink-0" />
+              Evidence-based answers (RAG)
+            </Label>
+            <p className="text-xs text-gray-500 mt-0.5 leading-snug">
+              Uses PubMed-indexed sources when available; response may include citations and
+              confidence.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="flex gap-2">
         <Input
           value={message}
