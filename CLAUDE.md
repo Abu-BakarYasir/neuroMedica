@@ -165,6 +165,23 @@ npm test
 - `/components/` — React UI components
 - `/lib/` — Shared utilities (Supabase client, etc.)
 - `/tests/` — All test files
+- `/supabase/` — Database schema and migrations
+- `/supabase/migrations/` — Sequential migration files (see rules below)
+- `/supabase/MIGRATION_RULES.md` — Migration guidelines (MUST READ before writing SQL)
+
+## Database Migrations
+
+**CRITICAL: We use a shared Supabase database (same instance for dev and prod).**
+
+Before writing ANY migration, read `supabase/MIGRATION_RULES.md`. Key rules:
+- Files go in `supabase/migrations/` named `NNN_action_target.sql`
+- Every migration MUST be idempotent (safe to run twice)
+- Every migration MUST be wrapped in `begin; ... commit;`
+- Use `if not exists` / `if exists` everywhere
+- NEVER use `DROP TABLE` or `DROP COLUMN` on active tables
+- New columns MUST be nullable or have defaults (backward-compatible)
+- Always add RLS policies for new tables
+- Update `supabase/schema.sql` after each migration
 
 ## Behavioral Rules
 
