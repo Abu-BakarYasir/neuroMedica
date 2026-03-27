@@ -42,15 +42,16 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# python
-__pycache__/
-*.pyc
-*.pyo
-.pytest_cache/
-backend/venv/
+ # python
+  __pycache__/
+  *.pyc
+  *.pyo
+  .pytest_cache/
+  venv/
+  backend/venv/
 
-# claude code tooling
-.claude/
-.claude-flow/
-.swarm/
-.mcp.json
+  # claude code tooling
+  .claude/
+  .claude-flow/
+  .swarm/
+  .mcp.json
