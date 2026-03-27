@@ -4,10 +4,9 @@ import logging
 import re
 from typing import Optional
 
-from qdrant_client import QdrantClient
-from qdrant_client.http.models import ScrollRequest
 from rank_bm25 import BM25Okapi
 
+from app.core.qdrant_client_factory import get_qdrant_client
 from app.retrieval.models import RetrievalResult
 
 logger = logging.getLogger(__name__)
@@ -40,7 +39,7 @@ class BM25Index:
         collection_name: str = "pubmed_articles",
     ) -> int:
         """Load all documents from Qdrant and build a BM25 index."""
-        client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
+        client = get_qdrant_client(qdrant_url, qdrant_api_key, timeout=300)
 
         # Scroll through all points to build the corpus
         self._documents = []

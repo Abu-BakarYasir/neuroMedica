@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class ChatService:
     def __init__(self):
         self.client = Groq(api_key=settings.groq_api_key)
-        self.model = "llama3-70b-8192"  # Groq model
+        self.model = "llama-3.3-70b-versatile"  # Groq model
     
     def generate_conversation_id(self) -> str:
         """Generate a unique conversation ID."""

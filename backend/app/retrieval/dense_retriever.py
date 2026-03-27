@@ -3,9 +3,9 @@
 import logging
 from typing import Optional
 
-from qdrant_client import QdrantClient
 from qdrant_client.http.models import Filter, FieldCondition, MatchValue
 
+from app.core.qdrant_client_factory import get_qdrant_client
 from app.ingestion.embedder import PubMedBERTEmbedder
 from app.retrieval.models import RetrievalResult
 
@@ -23,7 +23,7 @@ class DenseRetriever:
         embedder: Optional[PubMedBERTEmbedder] = None,
     ):
         self.collection_name = collection_name
-        self._client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
+        self._client = get_qdrant_client(qdrant_url, qdrant_api_key)
         self._embedder = embedder or PubMedBERTEmbedder()
 
     def search(
@@ -53,17 +53,17 @@ class DenseRetriever:
                 ]
             )
 
-        # Search Qdrant
-        hits = self._client.search(
+        # Search Qdrant (query_points replaces search in qdrant-client >=1.12)
+        response = self._client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_vector,
+            query=query_vector,
             limit=top_k,
             score_threshold=score_threshold,
             query_filter=qdrant_filter,
         )
 
         results = []
-        for hit in hits:
+        for hit in response.points:
             payload = hit.payload or {}
             results.append(RetrievalResult(
                 chunk_id=str(hit.id),
