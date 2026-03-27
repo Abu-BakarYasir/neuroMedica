@@ -3,6 +3,7 @@
 import hashlib
 import logging
 import re
+import uuid
 
 from app.ingestion.models import DocumentChunk, PubMedArticle
 
@@ -124,9 +125,12 @@ class DocumentChunker:
         index: int,
     ) -> DocumentChunk:
         """Create a DocumentChunk with a deterministic ID."""
-        chunk_id = hashlib.sha256(
-            f"{article.pmid}:{section}:{index}".encode()
-        ).hexdigest()[:16]
+        # Qdrant requires point IDs to be unsigned integers or UUIDs.
+        # Use UUID5 (deterministic) so the same content always gets the same ID.
+        chunk_id = str(uuid.uuid5(
+            uuid.NAMESPACE_URL,
+            f"pubmed:{article.pmid}:{section}:{index}",
+        ))
 
         metadata = {
             "title": article.title,
@@ -140,7 +144,7 @@ class DocumentChunker:
             metadata["publication_date"] = article.publication_date.isoformat()
 
         return DocumentChunk(
-            chunk_id=f"{article.pmid}_{chunk_id}",
+            chunk_id=chunk_id,
             pmid=article.pmid,
             text=text,
             section=section,

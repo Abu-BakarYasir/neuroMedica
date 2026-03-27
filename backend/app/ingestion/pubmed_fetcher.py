@@ -24,15 +24,44 @@ class PubMedFetcher:
         self.api_key = api_key
         self._client = httpx.AsyncClient(timeout=30.0)
 
-    async def search(self, query: str, max_results: int = 50) -> list[str]:
-        """Search PubMed and return a list of PMIDs."""
+    async def search(
+        self,
+        query: str,
+        max_results: int = 50,
+        article_type_filter: str = "",
+        sort: str = "relevance",
+        min_date: str = "",
+        max_date: str = "",
+    ) -> list[str]:
+        """Search PubMed and return a list of PMIDs.
+
+        Args:
+            query: Search query (can include MeSH terms and PubMed syntax).
+            max_results: Maximum number of PMIDs to return.
+            article_type_filter: PubMed filter e.g. "Review[pt]" appended to query.
+            sort: Sort order — "relevance" or "pub_date".
+            min_date: Minimum publication date (e.g., "2015").
+            max_date: Maximum publication date (e.g., "2026").
+        """
+        # Build the full search term
+        search_term = query
+        if article_type_filter:
+            search_term = f"({query}) AND {article_type_filter}"
+
         params = {
             "db": "pubmed",
-            "term": query,
+            "term": search_term,
             "retmax": max_results,
             "retmode": "json",
+            "sort": sort,
             "email": self.email,
         }
+        if min_date:
+            params["datetype"] = "pdat"
+            params["mindate"] = min_date
+        if max_date:
+            params["datetype"] = "pdat"
+            params["maxdate"] = max_date
         if self.api_key:
             params["api_key"] = self.api_key
 
@@ -40,7 +69,10 @@ class PubMedFetcher:
         resp.raise_for_status()
         data = resp.json()
         pmids = data.get("esearchresult", {}).get("idlist", [])
-        logger.info("PubMed search '%s' returned %d PMIDs", query, len(pmids))
+        logger.info(
+            "PubMed search '%s' returned %d PMIDs (filter=%s, sort=%s)",
+            search_term[:100], len(pmids), article_type_filter or "none", sort,
+        )
         return pmids
 
     async def fetch_articles(self, pmids: list[str]) -> list[PubMedArticle]:

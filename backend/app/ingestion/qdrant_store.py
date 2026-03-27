@@ -3,7 +3,6 @@
 import logging
 from typing import Optional
 
-from qdrant_client import QdrantClient
 from qdrant_client.http.models import (
     Distance,
     PointStruct,
@@ -13,6 +12,7 @@ from qdrant_client.http.models import (
     MatchValue,
 )
 
+from app.core.qdrant_client_factory import get_qdrant_client
 from app.ingestion.models import EmbeddedChunk
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class QdrantStore:
         collection_name: str = COLLECTION_NAME,
     ):
         self.collection_name = collection_name
-        self._client = QdrantClient(url=url, api_key=api_key)
+        self._client = get_qdrant_client(url, api_key)
 
     def ensure_collection(self, vector_size: int):
         """Create the collection if it doesn't exist."""
@@ -95,7 +95,7 @@ class QdrantStore:
         return {
             "name": self.collection_name,
             "points_count": info.points_count,
-            "vectors_count": info.vectors_count,
+            "vectors_count": getattr(info, "vectors_count", info.points_count),
             "status": info.status.value,
         }
 

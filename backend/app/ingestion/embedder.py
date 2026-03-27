@@ -7,8 +7,9 @@ from app.ingestion.models import DocumentChunk, EmbeddedChunk
 
 logger = logging.getLogger(__name__)
 
-# Default model per ADR-002
-DEFAULT_MODEL = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
+# Default: sentence-transformers repo (PubMed-tuned). Raw microsoft/BiomedNLP-* IDs often
+# mis-resolve on Hugging Face for SentenceTransformer; override via settings if you re-ingest.
+DEFAULT_MODEL = "pritamdeka/S-PubMedBert-MS-MARCO"
 
 
 class PubMedBERTEmbedder:
