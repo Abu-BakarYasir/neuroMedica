@@ -15,6 +15,11 @@ COPY . .
 # Next.js collects anonymous telemetry — disable in prod
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Next.js needs these at build time for prerendering pages that use Supabase
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+ARG NEXT_PUBLIC_CHAT_API_URL
+
 RUN npm run build
 
 # --- Runner ---
