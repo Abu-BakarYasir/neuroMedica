@@ -17,25 +17,10 @@ _logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Preload ML models at startup so the first request isn't slow."""
-    _logger.info("Preloading embedding and reranker models...")
-    try:
-        from app.ingestion.embedder import PubMedBERTEmbedder
-        embedder = PubMedBERTEmbedder(model_name=settings.embedding_model)
-        embedder._load_model()
-        _logger.info("Embedding model loaded at startup")
-    except Exception as e:
-        _logger.warning("Embedding model preload failed (will lazy-load): %s", e)
-
-    try:
-        from app.reranking.reranker import ColBERTReranker
-        reranker = ColBERTReranker(model_name=settings.reranker_model)
-        reranker._load_model()
-        _logger.info("Reranker model loaded at startup")
-    except Exception as e:
-        _logger.warning("Reranker model preload failed (will lazy-load): %s", e)
-
-    yield  # Application runs here
+    """Application lifespan. ML models lazy-load on first request to avoid
+    startup timeouts on resource-constrained hosts (e.g. Railway free tier)."""
+    _logger.info("App starting — ML models will lazy-load on first request")
+    yield
 
 app = FastAPI(
     title=settings.app_name,
