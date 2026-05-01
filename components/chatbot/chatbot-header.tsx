@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ArrowLeftIcon } from "@/components/icons/arrow-left-icon";
 
 interface ChatbotHeaderProps {
   onToggleSidebar?: () => void;
@@ -11,6 +13,14 @@ export function ChatbotHeader({ onToggleSidebar }: ChatbotHeaderProps) {
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white rounded-t-lg">
       <div className="flex items-center gap-3">
+        <Link
+          href="/protected/doctors"
+          className="flex items-center gap-1.5 text-[#212121] hover:text-[#E55A2A] transition-colors text-sm font-medium"
+          aria-label="Back to dashboard"
+        >
+          <ArrowLeftIcon className="w-4 h-4" />
+          <span>Back</span>
+        </Link>
         {onToggleSidebar && (
           <Button
             variant="ghost"
