@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ChatbotHeader } from "./chatbot-header";
@@ -28,20 +28,54 @@ export function ChatWindow({
   onToggleSidebar,
   showInput = true,
 }: ChatWindowProps) {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // Track whether to follow new messages. Flips off when the user scrolls
+  // away from the bottom and back on when they return — so streaming deltas
+  // don't yank them out of mid-conversation reading.
+  const [followBottom, setFollowBottom] = useState(true);
+  const lastMessageCountRef = useRef(0);
+  const lastUserMessageCountRef = useRef(0);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const prevTotal = lastMessageCountRef.current;
+    lastMessageCountRef.current = messages.length;
+
+    const userCount = messages.filter((m) => m.role === "user").length;
+    const userJustSent = userCount > lastUserMessageCountRef.current;
+    lastUserMessageCountRef.current = userCount;
+
+    // Loading a conversation OR the user just sent a message: jump to
+    // bottom and re-engage follow mode.
+    const isInitialLoad = prevTotal === 0 && messages.length > 0;
+    if (isInitialLoad || userJustSent) {
+      el.scrollTop = el.scrollHeight;
+      setFollowBottom(true);
+      return;
+    }
+    // Streaming deltas / assistant messages: only follow if the user is
+    // already near the bottom; otherwise leave them where they're reading.
+    if (followBottom) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
+  }, [messages, followBottom]);
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setFollowBottom(distanceFromBottom < 80);
+  };
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg overflow-hidden">
       <ChatbotHeader onToggleSidebar={onToggleSidebar} />
-      <div className="flex-1 overflow-y-auto">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 min-h-0 overflow-y-auto"
+      >
         {isLoadingHistory ? (
           <div className="flex flex-col items-center justify-center h-full">
             <Loader2 className="w-6 h-6 text-neuro-primary animate-spin" />
@@ -92,7 +126,6 @@ export function ChatWindow({
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
         )}
       </div>

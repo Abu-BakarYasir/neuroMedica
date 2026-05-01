@@ -82,8 +82,8 @@ export function FullPageChat() {
       )}
 
       {/* Chat area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex-1 container mx-auto max-w-4xl py-6 px-4">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+        <div className="flex-1 min-h-0 w-full max-w-4xl mx-auto py-6 px-4">
           <ChatWindow
             messages={chat.messages}
             isLoading={chat.isLoading}
