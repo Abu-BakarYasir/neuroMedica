@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { sendMessage } from "./api-client";
+import { sendMessageStreaming } from "./api-client";
 import {
   loadMessages,
   saveMessage,
   generateTitle,
 } from "./conversation-service";
-import type { Message, ChatState, DbMessage } from "./types";
+import type { Message, ChatState, DbMessage, CitationItem } from "./types";
 
 function dbToMessage(db: DbMessage): Message {
   return {
@@ -127,30 +127,72 @@ export function useChat({ conversationId, onTitleGenerated }: UseChatOptions) {
         }));
 
         const useRag = state.useRag;
-        const response = await sendMessage(
+
+        // Insert a placeholder assistant message that we'll fill in as
+        // deltas arrive. Track its id so we can update only that one.
+        const assistantId = crypto.randomUUID();
+        setState((prev) => ({
+          ...prev,
+          messages: [
+            ...prev.messages,
+            {
+              id: assistantId,
+              role: "assistant",
+              content: "",
+              timestamp: new Date(),
+              usedRag: useRag,
+            },
+          ],
+        }));
+
+        let metaCitations: CitationItem[] | undefined;
+        let metaConfidence: string | undefined;
+        let metaDisclaimer: string | undefined;
+
+        const final = await sendMessageStreaming(
           content.trim(),
           conversationId,
           history,
-          useRag
+          useRag,
+          {
+            onMeta: (meta) => {
+              if (meta.citations) metaCitations = meta.citations;
+              if (meta.confidence) metaConfidence = meta.confidence;
+              if (meta.disclaimer) metaDisclaimer = meta.disclaimer;
+              setState((prev) => ({
+                ...prev,
+                messages: prev.messages.map((m) =>
+                  m.id === assistantId
+                    ? {
+                        ...m,
+                        citations: metaCitations,
+                        confidence: metaConfidence,
+                        disclaimer: metaDisclaimer,
+                      }
+                    : m
+                ),
+              }));
+            },
+            onDelta: (text) => {
+              setState((prev) => ({
+                ...prev,
+                messages: prev.messages.map((m) =>
+                  m.id === assistantId
+                    ? { ...m, content: m.content + text }
+                    : m
+                ),
+              }));
+            },
+          }
         );
 
-        // Add assistant message to UI
-        addMessageLocal({
-          role: "assistant",
-          content: response.message,
-          usedRag: useRag,
-          citations: response.citations,
-          confidence: response.confidence,
-          disclaimer: response.disclaimer,
-        });
-
-        // Save assistant message to DB
+        // Save assistant message to DB now that streaming is done
         try {
-          await saveMessage(conversationId, "assistant", response.message, {
+          await saveMessage(conversationId, "assistant", final.fullText, {
             used_rag: useRag,
-            citations: response.citations,
-            confidence: response.confidence,
-            disclaimer: response.disclaimer,
+            citations: final.citations,
+            confidence: final.confidence,
+            disclaimer: final.disclaimer,
           });
         } catch (err) {
           console.error("Failed to save assistant message:", err);

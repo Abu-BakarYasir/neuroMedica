@@ -5,7 +5,7 @@ and integrates with the existing chat API.
 """
 
 import logging
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 from app.core.config import settings
 from app.ingestion.embedder import PubMedBERTEmbedder
@@ -260,6 +260,128 @@ class RAGService:
         )
 
         return result
+
+    async def query_stream(
+        self,
+        question: str,
+        conversation_history: Optional[list[dict]] = None,
+        top_k: int = 10,
+    ) -> AsyncIterator[dict]:
+        """Streaming variant of query(). Yields event dicts:
+            {"type": "meta", "citations": [...], "confidence": ..., "disclaimer": ...}
+            {"type": "delta", "text": "..."}    (one per chunk)
+            {"type": "done"}
+
+        Retrieval/rerank/CRAG run synchronously, then the answer is streamed
+        token-by-token from Claude. Frontend can render citations + confidence
+        immediately while the prose streams in.
+        """
+        # Steps 0-4: same as query()
+        intent = classify_query(question)
+        mesh_term = await self._resolve_mesh_term(question)
+        logger.info(
+            "RAG-stream Step 0: intent=%s, mesh=%s", intent.value, mesh_term or "none",
+        )
+
+        hybrid = HybridRetriever(
+            dense_retriever=self._get_dense_retriever(),
+            bm25_index=self._get_bm25_index(),
+            rrf_k=settings.rrf_k,
+            dense_weight=settings.dense_weight,
+            sparse_weight=settings.sparse_weight,
+        )
+        retrieval_response = hybrid.search(query=question, top_k=top_k * 3)
+
+        graph_retriever = self._get_graph_retriever()
+        if graph_retriever:
+            try:
+                graph_results = graph_retriever.search(question, top_k=top_k)
+                if graph_results:
+                    combined = reciprocal_rank_fusion(
+                        result_lists=[retrieval_response.results, graph_results],
+                        k=settings.rrf_k,
+                        top_n=top_k * 3,
+                        weights=[1.0, 0.5],
+                    )
+                    retrieval_response.results = combined
+            except Exception as e:
+                logger.warning("Graph retrieval failed in stream path: %s", e)
+
+        reranked = self._reranker.rerank(
+            query=question, candidates=retrieval_response.results, top_n=top_k,
+        )
+
+        crag_result = self._crag.evaluate(
+            query=question, reranked_results=reranked.results,
+        )
+
+        confidence = "medium"
+        context_chunks = crag_result.accepted_chunks
+        if crag_result.action_taken == "proceed":
+            confidence = "high"
+        elif crag_result.action_taken == "fallback":
+            live = await self._live_pubmed_fallback(
+                question, intent=intent, mesh_term=mesh_term, top_k=top_k,
+            )
+            if live:
+                context_chunks = live
+                confidence = "medium"
+            else:
+                context_chunks = []
+                confidence = "insufficient"
+        elif crag_result.action_taken == "refine":
+            confidence = "medium"
+            if crag_result.refinement_queries:
+                extra = await self._refine_retrieval(
+                    crag_result.refinement_queries, top_k=5
+                )
+                context_chunks.extend(extra)
+            if not context_chunks:
+                live = await self._live_pubmed_fallback(
+                    question, intent=intent, mesh_term=mesh_term, top_k=top_k,
+                )
+                if live:
+                    context_chunks = live
+                else:
+                    confidence = "insufficient"
+
+        # Build citations now so the frontend can render the citation chips
+        # while the prose is still streaming.
+        citations = self._generator._build_citations(context_chunks) if hasattr(
+            self._generator, "_build_citations"
+        ) else []
+        disclaimer = "This information is for educational purposes only. Always consult qualified healthcare professionals for clinical decisions."
+
+        yield {
+            "type": "meta",
+            "citations": [c.model_dump() for c in citations],
+            "confidence": confidence,
+            "disclaimer": disclaimer,
+        }
+
+        # Stream the answer text
+        if hasattr(self._generator, "stream_generate"):
+            async for text in self._generator.stream_generate(
+                query=question,
+                context_chunks=context_chunks,
+                confidence=confidence,
+                conversation_history=conversation_history,
+                query_intent=intent.value,
+            ):
+                yield {"type": "delta", "text": text}
+        else:
+            # Fallback: generator doesn't support streaming — emit the whole
+            # answer as one delta so the SSE contract is preserved.
+            result = self._generator.generate(
+                query=question,
+                context_chunks=context_chunks,
+                confidence=confidence,
+                conversation_history=conversation_history,
+                query_intent=intent.value,
+            )
+            yield {"type": "delta", "text": result.answer}
+
+        yield {"type": "done"}
 
     async def _resolve_mesh_term(self, question: str) -> Optional[str]:
         """Extract medical terms from the question and resolve to MeSH vocabulary."""

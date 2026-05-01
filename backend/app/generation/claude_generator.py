@@ -6,7 +6,7 @@ enforce "I don't know" for unsupported claims.
 """
 
 import logging
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 import anthropic
 
@@ -163,6 +163,7 @@ class ClaudeGenerator:
         self.model = model
         self.max_tokens = max_tokens
         self._client = anthropic.Anthropic(api_key=api_key)
+        self._async_client = anthropic.AsyncAnthropic(api_key=api_key)
 
     def generate(
         self,
@@ -224,6 +225,48 @@ class ClaudeGenerator:
             query=query,
             confidence=confidence,
         )
+
+    async def stream_generate(
+        self,
+        query: str,
+        context_chunks: list[RerankResult],
+        confidence: str = "medium",
+        conversation_history: Optional[list[dict]] = None,
+        query_intent: str = "general",
+    ) -> AsyncIterator[str]:
+        """Stream the answer text as it's generated. Yields raw text deltas."""
+        if context_chunks:
+            system = INTENT_PROMPTS.get(query_intent, INTENT_PROMPTS["general"])
+            user_message = self._build_context_message(
+                query, context_chunks, [], confidence,
+            )
+            # Re-build with proper citations now that we know we have chunks
+            citations = self._build_citations(context_chunks)
+            user_message = self._build_context_message(
+                query, context_chunks, citations, confidence,
+            )
+        else:
+            user_message = f"User question: {query}"
+            system = NO_CONTEXT_PROMPT
+
+        messages = []
+        if conversation_history:
+            messages.extend(conversation_history[-6:])
+        messages.append({"role": "user", "content": user_message})
+
+        logger.info(
+            "Streaming answer (model=%s, context_chunks=%d, confidence=%s, intent=%s)",
+            self.model, len(context_chunks), confidence, query_intent,
+        )
+
+        async with self._async_client.messages.stream(
+            model=self.model,
+            max_tokens=self.max_tokens,
+            system=system,
+            messages=messages,
+        ) as stream:
+            async for text in stream.text_stream:
+                yield text
 
     def _build_citations(self, chunks: list[RerankResult]) -> list[Citation]:
         """Build citation objects from context chunks."""

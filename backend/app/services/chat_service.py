@@ -1,5 +1,5 @@
 from groq import Groq
-from typing import List, Optional
+from typing import AsyncIterator, List, Optional
 import uuid
 import logging
 from app.core.config import settings
@@ -105,6 +105,53 @@ Guidelines:
             logger.error(f"Groq API error: {str(e)}", exc_info=True)
             raise Exception(f"Groq API error: {str(e)}")
 
+
+    async def stream_chat_response(
+        self,
+        message: str,
+        conversation_id: Optional[str] = None,
+        history: Optional[List[Message]] = None,
+    ) -> AsyncIterator[str]:
+        """Stream Groq chat response as text deltas.
+
+        Yields plain text strings (no envelope). The endpoint wraps each in an
+        SSE event. Errors propagate as exceptions for the endpoint to handle.
+        """
+        history = history or []
+        formatted_messages = self.format_messages_for_groq(history, message)
+        system_prompt = """You are Med Assistant, a helpful AI assistant for NeuroMedica,
+a healthcare management platform. You provide accurate, helpful medical information and assistance
+to healthcare professionals and medical students.
+
+Guidelines:
+- Provide accurate, evidence-based medical information
+- Always emphasize that you are an AI assistant and users should verify critical information
+- Be professional, empathetic, and clear in your responses
+- If asked about specific medical conditions or treatments, provide general information but
+  always recommend consulting with qualified healthcare professionals
+- Help with medical terminology, study resources, and general medical questions
+- Do not provide diagnoses or treatment plans for specific individuals
+"""
+        # Groq SDK is sync; calling stream=True returns a sync iterator.
+        # Iterate it from async by checking each chunk inline (chunks arrive
+        # quickly enough that this is acceptable here).
+        stream = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                *formatted_messages,
+            ],
+            max_tokens=1024,
+            temperature=0.7,
+            stream=True,
+        )
+        for chunk in stream:
+            try:
+                delta = chunk.choices[0].delta.content
+            except (IndexError, AttributeError):
+                delta = None
+            if delta:
+                yield delta
 
     def generate_title(self, message: str) -> str:
         """Generate a short conversation title from the first user message."""

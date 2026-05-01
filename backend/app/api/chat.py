@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import httpx
+import json
 from app.models.chat import ChatRequest, ChatResponse, CitationItem, ErrorResponse, Message
 from app.services.chat_service import chat_service
 from app.core.security import get_current_user
 from app.core.config import settings
-from typing import Dict, List
+from typing import AsyncIterator, Dict, List
 import uuid
 import logging
 
@@ -150,6 +152,95 @@ async def generate_title(
         # Fallback to truncated message
         fallback = request.message[:50] + ("..." if len(request.message) > 50 else "")
         return TitleResponse(title=fallback)
+
+
+def _sse(event: dict) -> bytes:
+    """Format a single SSE message: `data: {json}\\n\\n`."""
+    return f"data: {json.dumps(event)}\n\n".encode("utf-8")
+
+
+@router.post("/stream")
+async def stream_message(
+    request: ChatRequest,
+    http_request: Request,
+    user: Dict = Depends(get_current_user),
+):
+    """Streaming chat endpoint. Returns Server-Sent Events with deltas.
+
+    Event envelope (one per SSE message, JSON in `data:`):
+        {"type": "meta", "conversation_id": "..."}                first
+        {"type": "meta", "citations": [...], "confidence": ..., "disclaimer": ...}  RAG only
+        {"type": "delta", "text": "..."}                          one per token chunk
+        {"type": "done", "conversation_id": "..."}                last
+        {"type": "error", "message": "..."}                       on failure
+    """
+    conversation_id = request.conversation_id or str(uuid.uuid4())
+
+    # Build history (same as non-stream endpoint)
+    history: List[Message] = []
+    if request.history:
+        for msg in request.history:
+            if isinstance(msg, dict):
+                history.append(Message(**msg))
+            else:
+                history.append(msg)
+    if not history and request.conversation_id:
+        history = await _load_db_history(
+            conversation_id=request.conversation_id,
+            user_id=user.get("user_id", ""),
+        )
+        if history:
+            logger.info(
+                "Loaded %d messages from DB for conversation %s (stream)",
+                len(history), request.conversation_id,
+            )
+
+    use_rag = request.use_rag
+    rag = http_request.app.state.rag_service if use_rag else None
+    message = request.message
+
+    async def event_source() -> AsyncIterator[bytes]:
+        # First event: conversation id so client can persist the round-trip
+        yield _sse({"type": "meta", "conversation_id": conversation_id})
+        try:
+            if use_rag:
+                local_rag = rag
+                if local_rag is None:
+                    from app.services.rag_service import RAGService
+                    local_rag = RAGService()
+                conv_history = [
+                    {"role": m.role, "content": m.content}
+                    for m in history
+                    if m.role in ("user", "assistant")
+                ]
+                async for event in local_rag.query_stream(
+                    question=message, conversation_history=conv_history,
+                ):
+                    yield _sse(event)
+                    if event.get("type") == "done":
+                        return
+                yield _sse({"type": "done", "conversation_id": conversation_id})
+            else:
+                async for delta in chat_service.stream_chat_response(
+                    message=message,
+                    conversation_id=conversation_id,
+                    history=history,
+                ):
+                    yield _sse({"type": "delta", "text": delta})
+                yield _sse({"type": "done", "conversation_id": conversation_id})
+        except Exception as e:
+            logger.error("Stream chat error: %s", e, exc_info=True)
+            yield _sse({"type": "error", "message": str(e)})
+
+    return StreamingResponse(
+        event_source(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 async def _handle_rag_query(
