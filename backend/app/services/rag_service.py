@@ -81,6 +81,31 @@ class RAGService:
             embedder=self._embedder,
         )
 
+    def warmup(self) -> None:
+        """Force-load embedder + reranker + BM25 AND run one dummy inference
+        through each so PyTorch/Transformers JIT-compiles its kernels. Without
+        the dummy predict() the first real request still pays a ~30s
+        compilation cliff on the cross-encoder."""
+        try:
+            self._embedder._load_model()
+            # Tiny encode forces tokenizer + model graph compile.
+            self._embedder._model.encode(
+                ["warmup"], batch_size=1, show_progress_bar=False,
+                normalize_embeddings=True,
+            )
+        except Exception as e:
+            logger.warning("Embedder warmup failed: %s", e)
+        try:
+            self._reranker._load_model()
+            # One pair through the cross-encoder triggers kernel compile.
+            self._reranker._model.predict(
+                [["warmup query", "warmup document"]],
+                batch_size=1, show_progress_bar=False,
+            )
+        except Exception as e:
+            logger.warning("Reranker warmup failed: %s", e)
+        self._get_bm25_index()
+
     def _get_bm25_index(self) -> BM25Index:
         if self._bm25_build_failed:
             return self._bm25_index

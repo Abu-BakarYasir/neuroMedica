@@ -17,9 +17,20 @@ _logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan. ML models lazy-load on first request to avoid
-    startup timeouts on resource-constrained hosts (e.g. Railway free tier)."""
-    _logger.info("App starting — ML models will lazy-load on first request")
+    """Application lifespan. Preload the RAGService (embedder + reranker + BM25)
+    so the first user request doesn't pay ~25s of model-load latency.
+    Set PRELOAD_MODELS=false to skip (e.g. Railway free tier where startup must
+    complete inside the platform's health-check window)."""
+    app.state.rag_service = None
+    if settings.preload_models:
+        _logger.info("Preloading RAG models (embedder + reranker + BM25)...")
+        from app.services.rag_service import RAGService
+        rag = RAGService()
+        rag.warmup()
+        app.state.rag_service = rag
+        _logger.info("RAG models preloaded — first request will be warm")
+    else:
+        _logger.info("PRELOAD_MODELS=false — models will lazy-load on first request")
     yield
 
 app = FastAPI(

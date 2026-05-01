@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = False
 
+    # Preload PubMedBERT + reranker + BM25 at startup so the first RAG request
+    # doesn't pay ~25s of model-load tax. Disable on Railway free tier where
+    # startup must complete inside the platform's health-check window.
+    preload_models: bool = True
+
     # Railway sets this automatically for public services
     railway_public_domain: Optional[str] = None
 

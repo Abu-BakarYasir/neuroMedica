@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from app.models.chat import ChatRequest, ChatResponse, CitationItem, ErrorResponse, Message
 from app.services.chat_service import chat_service
@@ -16,6 +16,7 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 @router.post("/message", response_model=ChatResponse)
 async def send_message(
     request: ChatRequest,
+    http_request: Request,
     user: Dict = Depends(get_current_user),
 ) -> ChatResponse:
     """
@@ -36,7 +37,8 @@ async def send_message(
 
         # RAG mode: full retrieval -> rerank -> CRAG -> generate (Claude or Groq)
         if request.use_rag:
-            return await _handle_rag_query(request.message, conversation_id, history)
+            rag = http_request.app.state.rag_service
+            return await _handle_rag_query(request.message, conversation_id, history, rag)
 
         # Standard mode: Groq chat
         response_text, conversation_id = chat_service.get_chat_response(
@@ -84,12 +86,19 @@ async def generate_title(
 
 
 async def _handle_rag_query(
-    message: str, conversation_id: str, history: list[Message]
+    message: str,
+    conversation_id: str,
+    history: list[Message],
+    rag=None,
 ) -> ChatResponse:
-    """Handle a RAG-enhanced query through the full pipeline."""
-    from app.services.rag_service import RAGService
+    """Handle a RAG-enhanced query through the full pipeline.
 
-    rag = RAGService()
+    Reuses the singleton RAGService stored on app.state when available;
+    falls back to a per-request instance when preload is disabled.
+    """
+    if rag is None:
+        from app.services.rag_service import RAGService
+        rag = RAGService()
 
     # Convert chat history to Claude format
     conv_history = [
