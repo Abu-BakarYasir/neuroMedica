@@ -1,16 +1,69 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
+import httpx
 from app.models.chat import ChatRequest, ChatResponse, CitationItem, ErrorResponse, Message
 from app.services.chat_service import chat_service
 from app.core.security import get_current_user
 from app.core.config import settings
-from typing import Dict
+from typing import Dict, List
 import uuid
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
+
+
+async def _load_db_history(
+    conversation_id: str, user_id: str, limit: int = 20
+) -> List[Message]:
+    """Load recent messages for a conversation directly from Supabase.
+
+    Used as a defensive fallback when the frontend posts an empty history
+    alongside a conversation_id (e.g. after a page reload that wiped client
+    state). Verifies the conversation belongs to the authenticated user before
+    returning anything. Returns [] on any error so chat never blocks on this.
+    """
+    if not conversation_id or not user_id or user_id == "verified":
+        return []
+    headers = {
+        "apikey": settings.supabase_service_role_key,
+        "Authorization": f"Bearer {settings.supabase_service_role_key}",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            check = await client.get(
+                f"{settings.supabase_url}/rest/v1/conversations",
+                params={
+                    "id": f"eq.{conversation_id}",
+                    "user_id": f"eq.{user_id}",
+                    "select": "id",
+                },
+                headers=headers,
+            )
+            if check.status_code != 200 or not check.json():
+                return []
+            res = await client.get(
+                f"{settings.supabase_url}/rest/v1/messages",
+                params={
+                    "conversation_id": f"eq.{conversation_id}",
+                    "order": "created_at.asc",
+                    "select": "role,content",
+                    "limit": str(limit),
+                },
+                headers=headers,
+            )
+            if res.status_code != 200:
+                return []
+            rows = res.json()
+            return [
+                Message(role=row["role"], content=row["content"])
+                for row in rows
+                if row.get("role") in ("user", "assistant") and row.get("content")
+            ]
+    except Exception as e:
+        logger.warning("DB history fallback failed: %s", e)
+        return []
 
 
 @router.post("/message", response_model=ChatResponse)
@@ -34,6 +87,20 @@ async def send_message(
                     history.append(Message(**msg))
                 else:
                     history.append(msg)
+
+        # Defensive fallback: if frontend sent no history but the conversation
+        # already exists, pull recent messages from Supabase so the LLM keeps
+        # context across page reloads / cleared client state.
+        if not history and request.conversation_id:
+            history = await _load_db_history(
+                conversation_id=request.conversation_id,
+                user_id=user.get("user_id", ""),
+            )
+            if history:
+                logger.info(
+                    "Loaded %d messages from DB for conversation %s",
+                    len(history), request.conversation_id,
+                )
 
         # RAG mode: full retrieval -> rerank -> CRAG -> generate (Claude or Groq)
         if request.use_rag:
