@@ -22,17 +22,17 @@ export function SearchBar({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex items-center gap-2 rounded-[10px] border border-[#EDEDED] bg-white px-3 h-[40px] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)]"
+      className="flex items-center gap-2 rounded-[10px] border border-[#EDEDED] dark:border-white/10 bg-white dark:bg-[hsl(var(--surface-card))] px-3 h-[40px] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] dark:shadow-none"
     >
-      <Search className="h-4 w-4 text-[#212121]" />
+      <Search className="h-4 w-4 text-[#212121] dark:text-neutral-300" />
       <input
         type="text"
         placeholder={placeholder}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="flex-1 bg-transparent border-none outline-none text-sm font-medium text-[#212121] placeholder:text-[#8D8D8D]"
+        className="flex-1 bg-transparent border-none outline-none text-sm font-medium text-[#212121] dark:text-neutral-100 placeholder:text-[#8D8D8D] dark:placeholder:text-neutral-500"
       />
-      <div className="rounded-[22px] bg-[#F8F8F8] px-1.5 py-0.5 text-xs text-[#212121] font-normal">
+      <div className="rounded-[22px] bg-[#F8F8F8] dark:bg-white/10 px-1.5 py-0.5 text-xs text-[#212121] dark:text-neutral-300 font-normal">
         ⌘ K
       </div>
     </form>

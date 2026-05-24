@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   mainNavigationItems,
   clinicalToolsSidebarItems,
@@ -91,7 +92,7 @@ export function Sidebar({ className }: { className?: string }) {
             isCollapsed ? "justify-center gap-0" : "gap-1.5",
             active
               ? "bg-[linear-gradient(180deg,rgba(255,168,200,1)_7%,rgba(245,137,71,1)_70%,rgba(244,115,37,1)_88%,rgba(255,79,52,1)_100%)] shadow-[0px_1.43px_3.06px_0px_rgba(0,0,0,0.04),0px_5.72px_5.72px_0px_rgba(0,0,0,0.03),0px_12.87px_7.76px_0px_rgba(0,0,0,0.02),0px_22.67px_9.19px_0px_rgba(0,0,0,0.01),0px_35.53px_10.01px_0px_rgba(0,0,0,0)]"
-              : "hover:bg-gray-200/50"
+              : "hover:bg-gray-200/50 dark:hover:bg-white/5"
           )}
           style={
             active
@@ -108,7 +109,10 @@ export function Sidebar({ className }: { className?: string }) {
               alt={item.name}
               width={12}
               height={12}
-              className={cn("object-contain", active ? "brightness-0 invert" : "")}
+              className={cn(
+                "object-contain dark:invert dark:brightness-[2]",
+                active ? "brightness-0 invert dark:invert-0 dark:brightness-100" : ""
+              )}
               style={
                 !active
                   ? {
@@ -124,7 +128,11 @@ export function Sidebar({ className }: { className?: string }) {
             <span
               className={cn(
                 "text-[13px] font-normal leading-[1.15]",
-                active ? "text-white" : isSettingsHelp ? "text-[#202020]" : "text-[#525252]"
+                active
+                  ? "text-white"
+                  : isSettingsHelp
+                    ? "text-[#202020] dark:text-neutral-200"
+                    : "text-[#525252] dark:text-neutral-300"
               )}
               style={{ letterSpacing: "0.5%" }}
             >
@@ -139,30 +147,38 @@ export function Sidebar({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "bg-[#F8F8F8] rounded-[24px] flex flex-col px-4 py-[10px] h-full transition-all duration-300 overflow-hidden relative",
+        "bg-[#F8F8F8] dark:bg-[hsl(var(--surface-panel))] rounded-[24px] flex flex-col px-4 py-[10px] h-full transition-all duration-300 overflow-hidden relative",
         isCollapsed ? "w-20" : "w-[260px]",
         className
       )}
     >
       {/* Logo Header Section - Fixed at top */}
-      <div className="flex items-center justify-between mb-[29px] flex-shrink-0">
+      <div className="flex items-center justify-between mb-[29px] flex-shrink-0 gap-2">
         {!isCollapsed && (
-          <span className="text-xl font-semibold text-[#212121]">
+          <span className="text-xl font-semibold text-[#212121] dark:text-white">
             Neuro medica
           </span>
         )}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="w-4 h-4 flex items-center justify-center hover:opacity-70 transition-opacity"
-        >
-          <Image
-            src="/assets/icons/Vector (1).svg"
-            alt="Menu"
-            width={13}
-            height={13}
-            className="object-contain"
+        <div className={cn("flex items-center gap-1", isCollapsed && "flex-col-reverse")}>
+          {/* Theme toggle */}
+          <ThemeToggle
+            className="w-6 h-6"
+            size={14}
           />
-        </button>
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            aria-label="Toggle sidebar"
+          >
+            <Image
+              src="/assets/icons/Vector (1).svg"
+              alt="Menu"
+              width={13}
+              height={13}
+              className="object-contain dark:invert dark:brightness-[2]"
+            />
+          </button>
+        </div>
       </div>
 
       {/* Navigation Area - Flex-1, scrollable */}
@@ -174,7 +190,7 @@ export function Sidebar({ className }: { className?: string }) {
 
         {!isCollapsed && (
           <p
-            className="text-[11px] text-[#838383] mb-1 px-2 leading-[1.15]"
+            className="text-[11px] text-[#838383] dark:text-neutral-400 mb-1 px-2 leading-[1.15]"
             style={{ letterSpacing: "0.5%" }}
           >
             Clinical tools
@@ -187,7 +203,7 @@ export function Sidebar({ className }: { className?: string }) {
         {/* Settings & Help Section */}
         {!isCollapsed && (
           <p
-            className="text-[11px] text-[#838383] mb-1 px-2 leading-[1.15]"
+            className="text-[11px] text-[#838383] dark:text-neutral-400 mb-1 px-2 leading-[1.15]"
             style={{ letterSpacing: "0.5%" }}
           >
             Settings & help
@@ -201,7 +217,7 @@ export function Sidebar({ className }: { className?: string }) {
       </div>
 
       {/* Gradient Background Image */}
-      <div className="absolute bottom-0 left-0 right-0 pointer-events-none overflow-hidden rounded-b-[24px]">
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none overflow-hidden rounded-b-[24px] opacity-100 dark:opacity-30">
         <Image
           src="/assets/icons/Group 1244832313.svg"
           alt=""
@@ -216,17 +232,17 @@ export function Sidebar({ className }: { className?: string }) {
       {!isCollapsed && (
         <div className="mb-3 relative h-[120px] z-20 flex-shrink-0">
           {/* Bottom Layer */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-[14px] w-[180px] h-[120px] bg-white border-[0.85px] border-[#EDEDED] rounded-[10px] opacity-50 shadow-sm">
+          <div className="absolute left-1/2 -translate-x-1/2 top-[14px] w-[180px] h-[120px] bg-white dark:bg-[hsl(var(--surface-card))] border-[0.85px] border-[#EDEDED] dark:border-white/10 rounded-[10px] opacity-50 shadow-sm">
             <div className="left-3 top-3 w-[154px]"></div>
           </div>
 
           {/* Middle Layer */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-[7px] w-[200px] h-[120px] bg-white border-[0.85px] border-[#EDEDED] rounded-[10px] opacity-50 shadow-sm">
+          <div className="absolute left-1/2 -translate-x-1/2 top-[7px] w-[200px] h-[120px] bg-white dark:bg-[hsl(var(--surface-card))] border-[0.85px] border-[#EDEDED] dark:border-white/10 rounded-[10px] opacity-50 shadow-sm">
             <div className="left-3 top-3 w-[174px]"></div>
           </div>
 
           {/* Top Layer */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-0 bg-white border-[0.85px] border-[#EDEDED] rounded-[10px] p-3 w-[220px] h-[120px] shadow-md">
+          <div className="absolute left-1/2 -translate-x-1/2 top-0 bg-white dark:bg-[hsl(var(--surface-card))] border-[0.85px] border-[#EDEDED] dark:border-white/10 rounded-[10px] p-3 w-[220px] h-[120px] shadow-md">
             <div className="flex flex-col gap-2 h-full">
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 relative flex-shrink-0">
@@ -243,10 +259,10 @@ export function Sidebar({ className }: { className?: string }) {
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <p className="text-[13px] font-medium text-[#070707] leading-[1.3]">
+                <p className="text-[13px] font-medium text-[#070707] dark:text-neutral-100 leading-[1.3]">
                   Fatigue risk predicted for John.
                 </p>
-                <p className="text-[10px] font-normal text-[#767676] leading-[1.3]">
+                <p className="text-[10px] font-normal text-[#767676] dark:text-neutral-400 leading-[1.3]">
                   Blood sugar levels are 15% higher than usual this week,
                   increasing the likelihood of fatigue in the next 2 days.
                 </p>
@@ -258,7 +274,7 @@ export function Sidebar({ className }: { className?: string }) {
 
       {/* Line Separator */}
       {!isCollapsed && (
-        <div className="mb-3 w-full h-[2px] bg-white relative z-10 flex-shrink-0" />
+        <div className="mb-3 w-full h-[2px] bg-white dark:bg-white/10 relative z-10 flex-shrink-0" />
       )}
 
       {/* User Profile Section - Anchored to bottom */}
@@ -268,7 +284,7 @@ export function Sidebar({ className }: { className?: string }) {
           isCollapsed ? "justify-center flex-col gap-2" : "gap-2.5"
         )}
       >
-        <div className="w-9 h-9 relative rounded-[10px] bg-white overflow-hidden flex-shrink-0">
+        <div className="w-9 h-9 relative rounded-[10px] bg-white dark:bg-[hsl(var(--surface-card))] overflow-hidden flex-shrink-0">
           <Image
             src="/assets/icons/Memoji Boys 2-21.png"
             alt="User Avatar"
@@ -281,14 +297,14 @@ export function Sidebar({ className }: { className?: string }) {
           <>
             <div className="flex-1 min-w-0">
               <p
-                className="text-[13px] font-semibold text-[#202020] truncate leading-[1.15]"
+                className="text-[13px] font-semibold text-[#202020] dark:text-neutral-100 truncate leading-[1.15]"
                 style={{ letterSpacing: "0.5%" }}
                 title={userName || "Super Admin"}
               >
                 {userName || "Super Admin"}
               </p>
               <p
-                className="text-[11px] font-normal text-[#202020] truncate leading-[1.15]"
+                className="text-[11px] font-normal text-[#202020] dark:text-neutral-400 truncate leading-[1.15]"
                 style={{ letterSpacing: "0.5%" }}
                 title={userEmail || ""}
               >
@@ -305,7 +321,7 @@ export function Sidebar({ className }: { className?: string }) {
                 alt="Logout"
                 width={20}
                 height={20}
-                className="object-contain"
+                className="object-contain dark:invert dark:brightness-[2]"
               />
             </button>
           </>
@@ -321,7 +337,7 @@ export function Sidebar({ className }: { className?: string }) {
               alt="Logout"
               width={20}
               height={20}
-              className="object-contain"
+              className="object-contain dark:invert dark:brightness-[2]"
             />
           </button>
         )}

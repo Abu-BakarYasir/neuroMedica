@@ -60,10 +60,10 @@ export function FullPageChat() {
   );
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-background text-foreground">
       {/* Sidebar */}
       {sidebarOpen && (
-        <div className="w-72 shrink-0 h-full">
+        <div className="w-[260px] shrink-0 h-full">
           <ChatSidebar
             conversations={conversations.conversations}
             activeId={conversations.activeId}
@@ -81,21 +81,19 @@ export function FullPageChat() {
         </div>
       )}
 
-      {/* Chat area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0">
-        <div className="flex-1 min-h-0 w-full max-w-4xl mx-auto py-6 px-4">
-          <ChatWindow
-            messages={chat.messages}
-            isLoading={chat.isLoading}
-            isLoadingHistory={chat.isLoadingHistory}
-            useRag={chat.useRag}
-            onSendMessage={handleSendMessage}
-            onUseRagChange={chat.setUseRag}
-            onToggleSidebar={
-              sidebarOpen ? undefined : () => setSidebarOpen(true)
-            }
-          />
-        </div>
+      {/* Chat area — fills page, ChatWindow controls its own content max-width */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-background">
+        <ChatWindow
+          messages={chat.messages}
+          isLoading={chat.isLoading}
+          isLoadingHistory={chat.isLoadingHistory}
+          useRag={chat.useRag}
+          onSendMessage={handleSendMessage}
+          onUseRagChange={chat.setUseRag}
+          onToggleSidebar={
+            sidebarOpen ? undefined : () => setSidebarOpen(true)
+          }
+        />
       </div>
     </div>
   );

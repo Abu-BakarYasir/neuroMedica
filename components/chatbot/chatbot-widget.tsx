@@ -67,7 +67,7 @@ export function ChatbotWidget() {
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed bottom-6 right-6 z-40 w-[380px]"
           >
-            <div className="bg-white rounded-t-2xl shadow-2xl border border-gray-200 h-[600px] max-h-[calc(100vh-8rem)] flex flex-col overflow-hidden">
+            <div className="bg-white dark:bg-[hsl(var(--surface-card))] rounded-t-2xl shadow-2xl border border-gray-200 dark:border-white/10 h-[600px] max-h-[calc(100vh-8rem)] flex flex-col overflow-hidden">
               <ChatWindowMini onClose={handleClose} />
             </div>
           </motion.div>

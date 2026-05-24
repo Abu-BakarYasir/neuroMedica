@@ -99,3 +99,56 @@ create trigger trg_update_conversation_timestamp
   after insert on public.messages
   for each row
   execute function public.update_conversation_timestamp();
+
+-- ============================================================
+-- Patients: manual patient registry (migration 003)
+-- ============================================================
+
+create table if not exists public.patients (
+  id              uuid primary key default gen_random_uuid(),
+  doctor_id       uuid not null references auth.users(id) on delete cascade,
+  name            text not null,
+  phone           text,
+  address         text,
+  notes           text,
+  date_of_birth   date,
+  sex             text check (sex in ('male', 'female', 'other', 'unknown')),
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+
+create index if not exists idx_patients_doctor_id  on public.patients(doctor_id);
+create index if not exists idx_patients_created_at on public.patients(created_at desc);
+create index if not exists idx_patients_name       on public.patients(lower(name));
+
+alter table public.patients enable row level security;
+
+create policy "Doctors can select own patients"
+  on public.patients for select
+  using (auth.uid() = doctor_id);
+
+create policy "Doctors can insert own patients"
+  on public.patients for insert
+  with check (auth.uid() = doctor_id);
+
+create policy "Doctors can update own patients"
+  on public.patients for update
+  using (auth.uid() = doctor_id)
+  with check (auth.uid() = doctor_id);
+
+create policy "Doctors can delete own patients"
+  on public.patients for delete
+  using (auth.uid() = doctor_id);
+
+create or replace function public.touch_patient_updated_at()
+returns trigger as $$
+begin
+  NEW.updated_at = now();
+  return NEW;
+end;
+$$ language plpgsql;
+
+create trigger trg_touch_patient_updated_at
+  before update on public.patients
+  for each row
+  execute function public.touch_patient_updated_at();

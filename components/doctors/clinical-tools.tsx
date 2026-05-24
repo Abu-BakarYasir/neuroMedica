@@ -27,10 +27,10 @@ export function ClinicalTools() {
   return (
     <section className="mb-6">
       <div className="mb-4">
-        <h2 className="text-[18px] font-medium text-[#212121] mb-2">
+        <h2 className="text-[18px] font-medium text-[#212121] dark:text-neutral-100 mb-2">
           {clinicalToolsContent.title}
         </h2>
-        <p className="text-sm text-[#6B6C6E]">
+        <p className="text-sm text-[#6B6C6E] dark:text-neutral-400">
           {clinicalToolsContent.subtitle}
         </p>
       </div>
@@ -49,7 +49,7 @@ export function ClinicalTools() {
             >
               <Link href={tool.href}>
                 <Card
-                  className="rounded-[20px] border border-[#EDEDED] bg-white p-6 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] hover:shadow-xl hover:border-neuro-primary/20 transition-all duration-300 cursor-pointer h-full"
+                  className="rounded-[20px] border border-[#EDEDED] dark:border-white/10 bg-white dark:bg-[hsl(var(--surface-card))] p-6 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] dark:shadow-none hover:shadow-xl hover:border-neuro-primary/20 transition-all duration-300 cursor-pointer h-full"
                 >
                   <CardContent className="p-0 flex flex-col h-full">
                     <div
@@ -57,10 +57,10 @@ export function ClinicalTools() {
                     >
                       <Icon className="h-6 w-6 text-neuro-primary" />
                     </div>
-                    <h3 className="text-lg font-semibold text-[#212121] mb-2">
+                    <h3 className="text-lg font-semibold text-[#212121] dark:text-neutral-100 mb-2">
                       {tool.name}
                     </h3>
-                    <p className="text-sm text-[#525252] leading-relaxed flex-1">
+                    <p className="text-sm text-[#525252] dark:text-neutral-300 leading-relaxed flex-1">
                       {tool.description}
                     </p>
                   </CardContent>
