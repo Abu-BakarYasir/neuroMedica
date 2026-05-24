@@ -23,3 +23,11 @@ anthropic>=0.18.0
 # RAG - Knowledge Graph
 neo4j>=5.15.0
 
+# ECG signal analysis
+# tensorflow-cpu keeps the image small; the model is a tiny Keras 3 CNN.
+tensorflow-cpu>=2.16.0
+# Optional R-peak detection for raw single-lead signals (long-format uploads).
+neurokit2>=0.2.10
+numpy>=1.26.0
+
+

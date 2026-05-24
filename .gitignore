@@ -60,3 +60,10 @@ next-env.d.ts
   .claude-flow/
   .swarm/
   .mcp.json
+
+  # ML model artifacts (drop locally into backend/models/, never committed)
+  backend/models/*.keras
+  backend/models/*.h5
+  backend/models/*.pkl
+  backend/models/*.packed.keras
+  /neuroMedica_ecg_model.keras

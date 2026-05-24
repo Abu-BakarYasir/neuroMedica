@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { ClinicalComingSoon } from "@/components/doctors/clinical-coming-soon";
-import { Activity } from "lucide-react";
 
-async function EcgContent() {
+import { createClient } from "@/lib/supabase/server";
+import { EcgAnalyzer } from "@/components/ecg/ecg-analyzer";
+
+async function EcgGate() {
   const supabase = await createClient();
   const {
     data: { session },
@@ -14,19 +14,19 @@ async function EcgContent() {
     redirect("/auth/login");
   }
 
-  return (
-    <ClinicalComingSoon
-      title="ECG Signal Analysis"
-      description="Rhythm detection and interval analysis"
-      Icon={Activity}
-    />
-  );
+  return <EcgAnalyzer />;
 }
 
 export default function EcgSignalAnalysisPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
-      <EcgContent />
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full text-sm text-[#525252]">
+          Loading…
+        </div>
+      }
+    >
+      <EcgGate />
     </Suspense>
   );
 }

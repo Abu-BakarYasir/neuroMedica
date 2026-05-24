@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from app.core.config import settings
-from app.api import chat, ingestion, retrieval, reranking
+from app.api import chat, ingestion, retrieval, reranking, ecg
 
 # Configure logging
 logging.basicConfig(
@@ -29,6 +29,10 @@ async def lifespan(app: FastAPI):
         rag.warmup()
         app.state.rag_service = rag
         _logger.info("RAG models preloaded — first request will be warm")
+
+        _logger.info("Preloading ECG CNN...")
+        from app.ecg.model_loader import warmup as ecg_warmup
+        ecg_warmup()
     else:
         _logger.info("PRELOAD_MODELS=false — models will lazy-load on first request")
     yield
@@ -54,6 +58,7 @@ app.include_router(chat.router)
 app.include_router(ingestion.router)
 app.include_router(retrieval.router)
 app.include_router(reranking.router)
+app.include_router(ecg.router)
 
 
 @app.get("/")
