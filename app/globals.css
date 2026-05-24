@@ -10,7 +10,7 @@
     --neuro-primary-light: 19 75% 65%; /* #F07A4A */
     --neuro-secondary: 19 30% 96%;       /* #FEF7F3 */
     --neuro-accent: 19 85% 35%;         /* #A03A15 */
-    
+
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;           /* #212121 */
     --card: 0 0% 100%;
@@ -36,38 +36,57 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-    
+
     /* Status Colors */
     --success: 142 76% 36%;            /* #13893A */
     --success-bg: 142 76% 95%;         /* #DEF8E7 */
     --warning: 48 96% 53%;              /* #DFAD0C */
     --warning-bg: 48 96% 96%;           /* #FBF6E4 */
+
+    /* App-level surfaces (used by sidebar, dashboard, chat) */
+    --surface-page: 0 0% 100%;          /* main page background */
+    --surface-panel: 0 0% 97%;          /* sidebar / sub-panels (#F8F8F8) */
+    --surface-card: 0 0% 100%;          /* card backgrounds */
+    --surface-elevated: 0 0% 99%;       /* slightly elevated rows */
+    --surface-subtle: 0 0% 98%;         /* hover backgrounds (#FAFAFA) */
   }
+
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --background: 222 18% 8%;            /* near-black blue */
+    --foreground: 0 0% 96%;
+    --card: 222 16% 12%;
+    --card-foreground: 0 0% 96%;
+    --popover: 222 16% 12%;
+    --popover-foreground: 0 0% 96%;
     --primary: var(--neuro-primary);
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 222 14% 16%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 222 14% 16%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 222 14% 18%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 62.8% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
+    --border: 222 12% 22%;
+    --input: 222 12% 22%;
     --ring: var(--neuro-primary);
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    --success: 142 60% 45%;
+    --success-bg: 142 35% 18%;
+    --warning: 48 90% 55%;
+    --warning-bg: 48 60% 18%;
+
+    --surface-page: 222 18% 8%;
+    --surface-panel: 222 18% 11%;
+    --surface-card: 222 16% 13%;
+    --surface-elevated: 222 16% 15%;
+    --surface-subtle: 222 16% 16%;
   }
 }
 
@@ -76,10 +95,10 @@
     @apply border-border;
   }
   body {
-    @apply bg-white text-foreground font-sans;
+    @apply bg-background text-foreground font-sans;
   }
   html {
-    @apply bg-white;
+    @apply bg-background;
     scroll-behavior: smooth;
   }
 }

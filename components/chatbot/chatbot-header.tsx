@@ -11,44 +11,51 @@ interface ChatbotHeaderProps {
 
 export function ChatbotHeader({ onToggleSidebar }: ChatbotHeaderProps) {
   return (
-    <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white rounded-t-lg">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/protected/doctors"
-          className="flex items-center gap-1.5 text-[#212121] hover:text-[#E55A2A] transition-colors text-sm font-medium"
-          aria-label="Back to dashboard"
-        >
-          <ArrowLeftIcon className="w-4 h-4" />
-          <span>Back</span>
-        </Link>
+    <header className="flex items-center justify-between h-14 px-4 sm:px-6 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-10">
+      {/* Left: sidebar toggle + back link */}
+      <div className="flex items-center gap-1">
         {onToggleSidebar && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onToggleSidebar}
-            className="h-8 w-8 hover:bg-gray-100"
-            aria-label="Toggle sidebar"
+            className="h-8 w-8 hover:bg-muted text-muted-foreground hover:text-foreground"
+            aria-label="Open sidebar"
           >
-            <PanelLeft className="w-4 h-4 text-gray-600" />
+            <PanelLeft className="w-4 h-4" />
           </Button>
         )}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neuro-primary/20 to-neuro-primary/10 flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-neuro-primary to-neuro-primary-dark flex items-center justify-center">
-            <span className="text-white text-xs font-semibold">MA</span>
-          </div>
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-gray-900">Med Assistant</h3>
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+        <Link
+          href="/protected/doctors"
+          className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Back to dashboard"
+        >
+          <ArrowLeftIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">Dashboard</span>
+        </Link>
+      </div>
+
+      {/* Right: title + AI badge + avatar (Claude-style: identity sits on the right) */}
+      <div className="flex items-center gap-2.5">
+        <div className="flex flex-col items-end leading-tight">
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Med Assistant
+            </h3>
+            <span className="text-[10px] font-medium uppercase tracking-wide bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
               AI
             </span>
           </div>
-          <p className="text-xs text-gray-500">
-            What are you looking for today?
+          <p className="text-[11px] text-muted-foreground hidden sm:block">
+            Evidence-aware clinical assistant
           </p>
         </div>
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-neuro-primary/25 to-neuro-primary/10 flex items-center justify-center ring-1 ring-neuro-primary/20">
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-neuro-primary to-neuro-primary-dark flex items-center justify-center">
+            <span className="text-white text-[11px] font-semibold">MA</span>
+          </div>
+        </div>
       </div>
-    </div>
+    </header>
   );
 }

@@ -8,16 +8,10 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div
-      className="flex flex-1 flex-col overflow-hidden relative rounded-3xl h-full"
-      style={{
-        background:
-          "linear-gradient(180deg, rgba(255, 202, 222, 0.35) 0%, #F8F8F8 62%)",
-      }}
-    >
+    <div className="flex flex-1 flex-col overflow-hidden relative rounded-3xl h-full bg-[linear-gradient(180deg,rgba(255,202,222,0.35)_0%,#F8F8F8_62%)] dark:bg-[linear-gradient(180deg,hsl(222_22%_14%)_0%,hsl(var(--surface-page))_62%)]">
       {/* Ripple Overlay */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none opacity-100 dark:opacity-20"
         style={{
           backgroundImage: "url(/assets/images/Ripple.png)",
           backgroundRepeat: "no-repeat",

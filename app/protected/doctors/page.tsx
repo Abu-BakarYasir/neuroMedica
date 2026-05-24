@@ -25,10 +25,10 @@ async function DoctorWelcome() {
 
   return (
     <div className="mb-8">
-      <h1 className="text-2xl font-semibold text-[#212121] mb-2" style={{ letterSpacing: "1%" }}>
+      <h1 className="text-2xl font-semibold text-[#212121] dark:text-neutral-100 mb-2" style={{ letterSpacing: "1%" }}>
         {doctorWelcomeContent.greeting} {userName}
       </h1>
-      <p className="text-sm text-[#6B6C6E]" style={{ lineHeight: "1.15em" }}>
+      <p className="text-sm text-[#6B6C6E] dark:text-neutral-400" style={{ lineHeight: "1.15em" }}>
         {doctorWelcomeContent.subtitle}
       </p>
     </div>
