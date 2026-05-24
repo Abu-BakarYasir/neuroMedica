@@ -64,7 +64,7 @@ export function LoginForm({
   return (
     <div
       className={cn(
-        "w-[435px] min-h-[507px] rounded-[20px] border border-[#EDEDED] bg-white px-[36px] py-[46px] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] flex flex-col",
+        "w-[435px] min-h-[507px] rounded-[20px] border border-[#EDEDED] dark:border-white/10 bg-white dark:bg-[hsl(var(--surface-card))] px-[36px] py-[46px] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] dark:shadow-none flex flex-col",
         className
       )}
       {...props}
@@ -72,10 +72,10 @@ export function LoginForm({
       <div className="flex flex-col gap-[32px] items-center w-full">
         {/* Header */}
         <div className="flex flex-col gap-3 items-center text-center">
-          <h1 className="text-2xl font-semibold text-[#212121] leading-tight tracking-[0.24px]">
+          <h1 className="text-2xl font-semibold text-[#212121] dark:text-neutral-100 leading-tight tracking-[0.24px]">
             Welcome to Neuro Medica
           </h1>
-          <p className="text-sm font-normal text-[#6B6C6E] leading-[1.15]">
+          <p className="text-sm font-normal text-[#6B6C6E] dark:text-neutral-400 leading-[1.15]">
             Enter your credentials to access your account.
           </p>
         </div>
@@ -89,21 +89,21 @@ export function LoginForm({
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
-                className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] bg-white flex items-center justify-center gap-2 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] dark:border-white/10 bg-white dark:bg-[hsl(var(--surface-elevated))] flex items-center justify-center gap-2 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] dark:shadow-none hover:bg-gray-50 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
               >
                 <GoogleIcon className="w-4 h-4" />
-                <span className="text-sm font-normal text-[#212121]">
+                <span className="text-sm font-normal text-[#212121] dark:text-neutral-200">
                   Sign in with Google
                 </span>
               </button>
 
               {/* Divider */}
               <div className="flex items-center gap-3 w-full">
-                <span className="h-px flex-1 bg-[rgba(107,108,110,0.15)]" />
-                <span className="text-xs font-medium text-[#212121] lowercase">
+                <span className="h-px flex-1 bg-[rgba(107,108,110,0.15)] dark:bg-white/10" />
+                <span className="text-xs font-medium text-[#212121] dark:text-neutral-400 lowercase">
                   or
                 </span>
-                <span className="h-px flex-1 bg-[rgba(107,108,110,0.15)]" />
+                <span className="h-px flex-1 bg-[rgba(107,108,110,0.15)] dark:bg-white/10" />
               </div>
 
               {/* Form Fields */}
@@ -115,7 +115,7 @@ export function LoginForm({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] bg-white px-3 text-[13px] font-normal text-[#212121] placeholder:text-[#8D8D8D] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E55A2A]"
+                    className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] dark:border-white/10 bg-white dark:bg-[hsl(var(--surface-elevated))] px-3 text-[13px] font-normal text-[#212121] dark:text-neutral-100 placeholder:text-[#8D8D8D] dark:placeholder:text-neutral-500 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] dark:shadow-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E55A2A]"
                   />
                   <div className="relative w-full">
                     <Input
@@ -124,12 +124,12 @@ export function LoginForm({
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] bg-white px-3 pr-10 text-[13px] font-normal text-[#212121] placeholder:text-[#8D8D8D] shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E55A2A]"
+                      className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] dark:border-white/10 bg-white dark:bg-[hsl(var(--surface-elevated))] px-3 pr-10 text-[13px] font-normal text-[#212121] dark:text-neutral-100 placeholder:text-[#8D8D8D] dark:placeholder:text-neutral-500 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] dark:shadow-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E55A2A]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8D8D8D] hover:text-[#212121] transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8D8D8D] dark:text-neutral-400 hover:text-[#212121] dark:hover:text-neutral-200 transition-colors"
                     >
                       {showPassword ? (
                         <EyeOffIcon className="w-4 h-4" />
@@ -149,11 +149,11 @@ export function LoginForm({
                       onCheckedChange={(checked) =>
                         setRememberMe(checked === true)
                       }
-                      className="rounded-[6px] border border-[#EDEDED] data-[state=checked]:bg-[#F76B15] data-[state=checked]:border-[#F76B15] w-3 h-3"
+                      className="rounded-[6px] border border-[#EDEDED] dark:border-white/20 data-[state=checked]:bg-[#F76B15] data-[state=checked]:border-[#F76B15] w-3 h-3"
                     />
                     <label
                       htmlFor="remember-me"
-                      className="text-xs font-normal text-[#212121] leading-[1.15] cursor-pointer"
+                      className="text-xs font-normal text-[#212121] dark:text-neutral-300 leading-[1.15] cursor-pointer"
                     >
                       Remember me
                     </label>
@@ -168,7 +168,7 @@ export function LoginForm({
               </div>
 
               {error && (
-                <p className="text-xs text-red-500 w-full">{error}</p>
+                <p className="text-xs text-red-500 dark:text-red-400 w-full">{error}</p>
               )}
 
               {/* Continue Button */}
@@ -189,7 +189,7 @@ export function LoginForm({
             </div>
 
             {/* Footer */}
-            <p className="text-[13px] font-normal text-[#BBBBBB] text-center leading-[1.15] w-full">
+            <p className="text-[13px] font-normal text-[#BBBBBB] dark:text-neutral-500 text-center leading-[1.15] w-full">
               Crafted with ❤️ by Neuro Medica
             </p>
           </div>

@@ -102,17 +102,17 @@ function ConversationItem({
             if (e.key === "Enter") handleSave();
             if (e.key === "Escape") handleCancel();
           }}
-          className="flex-1 text-sm bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-neuro-primary"
+          className="flex-1 text-sm bg-white dark:bg-[hsl(var(--surface-card))] text-gray-800 dark:text-neutral-100 border border-gray-300 dark:border-white/10 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-neuro-primary"
         />
         <button
           onClick={handleSave}
-          className="p-1 text-green-600 hover:bg-green-50 rounded"
+          className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded"
         >
           <Check className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleCancel}
-          className="p-1 text-gray-400 hover:bg-gray-100 rounded"
+          className="p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 rounded"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -125,8 +125,8 @@ function ConversationItem({
       onClick={onSelect}
       className={`group w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg text-sm transition-colors ${
         isActive
-          ? "bg-neuro-primary/10 text-neuro-primary-dark font-medium"
-          : "text-gray-700 hover:bg-gray-100"
+          ? "bg-neuro-primary/10 dark:bg-neuro-primary/20 text-neuro-primary-dark dark:text-[#F7A47A] font-medium"
+          : "text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-white/5"
       }`}
     >
       <span className="flex-1 truncate">{conversation.title}</span>
@@ -137,7 +137,7 @@ function ConversationItem({
             e.stopPropagation();
             setIsEditing(true);
           }}
-          className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-white/10 text-gray-400 dark:text-neutral-400 hover:text-gray-600 dark:hover:text-neutral-200"
         >
           <Pencil className="w-3 h-3" />
         </span>
@@ -147,7 +147,7 @@ function ConversationItem({
             e.stopPropagation();
             onDelete();
           }}
-          className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
+          className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 dark:text-neutral-400 hover:text-red-500"
         >
           <Trash2 className="w-3 h-3" />
         </span>
@@ -173,37 +173,50 @@ export function ChatSidebar({
   const groups = groupByDate(conversations);
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 border-r border-gray-200">
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-gray-200">
-        <Button
-          onClick={onNewChat}
-          variant="outline"
-          size="sm"
-          className="flex-1 mr-2 gap-2 text-sm font-medium"
-        >
-          <MessageSquarePlus className="w-4 h-4" />
-          New Chat
-        </Button>
+    <div className="flex flex-col h-full bg-[hsl(var(--surface-panel))] border-r border-border">
+      {/* Header — brand + collapse */}
+      <div className="flex items-center justify-between h-14 px-3 border-b border-border">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-neuro-primary to-neuro-primary-dark flex items-center justify-center shrink-0">
+            <span className="text-white text-[11px] font-semibold">MA</span>
+          </div>
+          <span className="text-sm font-semibold text-foreground truncate">
+            Med Assistant
+          </span>
+        </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="h-8 w-8 shrink-0"
+          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+          aria-label="Close sidebar"
         >
           <PanelLeftClose className="w-4 h-4" />
         </Button>
       </div>
 
+      {/* New chat button */}
+      <div className="px-2 pt-3">
+        <Button
+          onClick={onNewChat}
+          variant="outline"
+          size="sm"
+          className="w-full justify-start gap-2 text-sm font-medium h-9 bg-card hover:bg-muted border-border"
+        >
+          <MessageSquarePlus className="w-4 h-4" />
+          New chat
+        </Button>
+      </div>
+
       {/* Search */}
-      <div className="px-3 py-2">
+      <div className="px-2 py-2">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             value={searchQuery}
             onChange={(e) => onSearch(e.target.value)}
-            placeholder="Search conversations..."
-            className="pl-8 h-8 text-sm bg-white"
+            placeholder="Search chats…"
+            className="pl-8 h-8 text-sm bg-card border-border placeholder:text-muted-foreground"
           />
         </div>
       </div>
@@ -212,15 +225,15 @@ export function ChatSidebar({
       <div className="flex-1 overflow-y-auto px-2 py-1">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+            <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
           </div>
         ) : groups.length === 0 ? (
           <div className="text-center py-8 px-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {searchQuery ? "No results found" : "No conversations yet"}
             </p>
             {!searchQuery && (
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-muted-foreground/70 mt-1">
                 Start a new chat to begin
               </p>
             )}
@@ -228,7 +241,7 @@ export function ChatSidebar({
         ) : (
           groups.map((group) => (
             <div key={group.label} className="mb-3">
-              <p className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 {group.label}
               </p>
               {group.items.map((conv) => (
@@ -248,7 +261,7 @@ export function ChatSidebar({
 
       {/* Undo delete toast */}
       {pendingDelete && (
-        <div className="mx-2 mb-2 p-3 bg-gray-800 text-white rounded-lg flex items-center justify-between text-sm animate-in slide-in-from-bottom-2">
+        <div className="mx-2 mb-2 p-3 bg-gray-800 dark:bg-neutral-900 text-white rounded-lg flex items-center justify-between text-sm animate-in slide-in-from-bottom-2 border border-transparent dark:border-white/10">
           <span className="truncate mr-2">
             Deleted &ldquo;{pendingDelete.title}&rdquo;
           </span>

@@ -25,9 +25,9 @@ function NotificationIcon({
 
 function PriorityBadge({ priority }: { priority: "high" | "medium" | "low" }) {
   const badgeStyles = {
-    high: "bg-[#DEF8E7] text-[#13893A]",
-    medium: "bg-[#FBF6E4] text-[#DFAD0C]",
-    low: "bg-[#F5F5F5] text-[#6B6C6E]",
+    high: "bg-[#DEF8E7] dark:bg-emerald-900/40 text-[#13893A] dark:text-emerald-300",
+    medium: "bg-[#FBF6E4] dark:bg-amber-900/40 text-[#DFAD0C] dark:text-amber-300",
+    low: "bg-[#F5F5F5] dark:bg-white/10 text-[#6B6C6E] dark:text-neutral-300",
   };
 
   return (
@@ -51,7 +51,7 @@ export function Notifications() {
     <section className="mb-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-[18px] font-medium text-[#212121]">
+          <h2 className="text-[18px] font-medium text-[#212121] dark:text-neutral-100">
             {notificationsContent.title}
           </h2>
           {unreadCount > 0 && (
@@ -73,8 +73,8 @@ export function Notifications() {
           >
             <Card
               className={cn(
-                "rounded-[20px] border border-[#EDEDED] bg-white p-4 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)]",
-                notification.unread && "border-neuro-primary/30 bg-[#FFFBFB]"
+                "rounded-[20px] border border-[#EDEDED] dark:border-white/10 bg-white dark:bg-[hsl(var(--surface-card))] p-4 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] dark:shadow-none",
+                notification.unread && "border-neuro-primary/30 bg-[#FFFBFB] dark:bg-[hsl(var(--surface-elevated))]"
               )}
             >
               <CardContent className="p-0">
@@ -96,18 +96,18 @@ export function Notifications() {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3 className="text-sm font-semibold text-[#212121]">
+                      <h3 className="text-sm font-semibold text-[#212121] dark:text-neutral-100">
                         {notification.title}
                       </h3>
                       {notification.unread && (
                         <div className="w-2 h-2 rounded-full bg-neuro-primary flex-shrink-0 mt-1.5"></div>
                       )}
                     </div>
-                    <p className="text-sm text-[#525252] mb-2 leading-relaxed">
+                    <p className="text-sm text-[#525252] dark:text-neutral-300 mb-2 leading-relaxed">
                       {notification.message}
                     </p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#8D8D8D]">
+                      <span className="text-xs text-[#8D8D8D] dark:text-neutral-400">
                         {notification.time}
                       </span>
                       <PriorityBadge priority={notification.priority as "high" | "medium" | "low"} />

@@ -15,14 +15,14 @@ export default function ProtectedLayout({
 
   if (isChatRoute) {
     return (
-      <main className="h-screen w-screen overflow-hidden bg-white">
+      <main className="h-screen w-screen overflow-hidden bg-background text-foreground">
         {children}
       </main>
     );
   }
 
   return (
-    <main className="flex h-screen bg-white p-4 gap-4 overflow-hidden">
+    <main className="flex h-screen bg-background text-foreground p-4 gap-4 overflow-hidden">
       <Sidebar />
 
       <div className="flex-1 overflow-hidden">

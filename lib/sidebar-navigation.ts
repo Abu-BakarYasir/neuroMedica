@@ -18,6 +18,13 @@ export const mainNavigationItems: NavigationItem[] = [
     section: "main",
   },
   {
+    id: "patients",
+    name: "Patients",
+    href: "/protected/doctors/patients",
+    icon: "/assets/sidebar-icons/patients-icon.svg",
+    section: "main",
+  },
+  {
     id: "chatbot",
     name: "Chatbot",
     href: "/protected/chat",

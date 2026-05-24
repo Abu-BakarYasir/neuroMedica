@@ -24,10 +24,10 @@ export function MedicalResources() {
   return (
     <section className="mb-6">
       <div className="mb-4">
-        <h2 className="text-[18px] font-medium text-[#212121] mb-2">
+        <h2 className="text-[18px] font-medium text-[#212121] dark:text-neutral-100 mb-2">
           {medicalResourcesContent.title}
         </h2>
-        <p className="text-sm text-[#6B6C6E]">
+        <p className="text-sm text-[#6B6C6E] dark:text-neutral-400">
           {medicalResourcesContent.subtitle}
         </p>
       </div>
@@ -45,15 +45,15 @@ export function MedicalResources() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
             >
               <Link href={resource.href}>
-                <Card className="rounded-[20px] border border-[#EDEDED] bg-white p-4 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] hover:shadow-xl hover:border-neuro-primary/20 transition-all duration-300 cursor-pointer h-full group">
+                <Card className="rounded-[20px] border border-[#EDEDED] dark:border-white/10 bg-white dark:bg-[hsl(var(--surface-card))] p-4 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] dark:shadow-none hover:shadow-xl hover:border-neuro-primary/20 transition-all duration-300 cursor-pointer h-full group">
                   <CardContent className="p-0 flex flex-col h-full">
                     <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-neuro-primary/10 to-neuro-primary/5 flex items-center justify-center mb-3">
                       <Icon className="h-5 w-5 text-neuro-primary" />
                     </div>
-                    <h3 className="text-base font-semibold text-[#212121] mb-1.5">
+                    <h3 className="text-base font-semibold text-[#212121] dark:text-neutral-100 mb-1.5">
                       {resource.name}
                     </h3>
-                    <p className="text-xs text-[#525252] leading-relaxed flex-1 mb-2">
+                    <p className="text-xs text-[#525252] dark:text-neutral-300 leading-relaxed flex-1 mb-2">
                       {resource.description}
                     </p>
                     <div className="flex items-center gap-1 text-xs text-neuro-primary font-medium group-hover:gap-2 transition-all">
