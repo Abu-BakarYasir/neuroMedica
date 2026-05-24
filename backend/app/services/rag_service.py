@@ -497,8 +497,10 @@ class RAGService:
                 RetrievalResult(
                     chunk_id=dc.chunk_id,
                     pmid=dc.pmid,
+                    source_type=dc.source_type,
                     text=dc.text,
                     section=dc.section,
+                    url=dc.url,
                     score=1.0,
                     source="pubmed_live",
                     metadata=dc.metadata,

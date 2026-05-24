@@ -63,9 +63,11 @@ class QdrantStore:
         for chunk in chunks:
             payload = {
                 "pmid": chunk.pmid,
+                "source_type": chunk.source_type,
                 "text": chunk.text,
                 "section": chunk.section,
                 "chunk_index": chunk.chunk_index,
+                "url": chunk.url,
                 **chunk.metadata,
             }
             points.append(PointStruct(

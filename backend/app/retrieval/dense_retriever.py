@@ -68,13 +68,18 @@ class DenseRetriever:
             results.append(RetrievalResult(
                 chunk_id=str(hit.id),
                 pmid=payload.get("pmid", ""),
+                source_type=payload.get("source_type", "pubmed"),
                 text=payload.get("text", ""),
                 section=payload.get("section", "abstract"),
+                url=payload.get("url"),
                 score=hit.score,
                 source="dense",
                 metadata={
                     k: v for k, v in payload.items()
-                    if k not in ("pmid", "text", "section", "chunk_index")
+                    if k not in (
+                        "pmid", "text", "section", "chunk_index",
+                        "source_type", "url",
+                    )
                 },
             ))
 

@@ -5,7 +5,7 @@ import logging
 import re
 import uuid
 
-from app.ingestion.models import DocumentChunk, PubMedArticle
+from app.ingestion.models import DocumentChunk, GenericDocument, PubMedArticle
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +64,39 @@ class DocumentChunker:
 
         logger.info(
             "Chunked %d articles into %d chunks", len(articles), len(all_chunks)
+        )
+        return all_chunks
+
+    def chunk_document(self, doc: GenericDocument) -> list[DocumentChunk]:
+        """Chunk a source-agnostic document (OpenFDA label, RxNorm concept,
+        guideline). Each non-empty section becomes one or more chunks."""
+        chunks: list[DocumentChunk] = []
+        chunk_index = 0
+
+        # Title chunk (helps lexical / dense retrieval find the doc by name).
+        if doc.title:
+            chunks.append(self._make_generic_chunk(
+                doc, doc.title, section="title", index=chunk_index,
+            ))
+            chunk_index += 1
+
+        for section_name, body in doc.sections:
+            if not body or not body.strip():
+                continue
+            for piece in self._split_text(body):
+                chunks.append(self._make_generic_chunk(
+                    doc, piece, section=section_name, index=chunk_index,
+                ))
+                chunk_index += 1
+
+        return chunks
+
+    def chunk_documents(self, docs: list[GenericDocument]) -> list[DocumentChunk]:
+        all_chunks: list[DocumentChunk] = []
+        for d in docs:
+            all_chunks.extend(self.chunk_document(d))
+        logger.info(
+            "Chunked %d generic docs into %d chunks", len(docs), len(all_chunks)
         )
         return all_chunks
 
@@ -146,8 +179,37 @@ class DocumentChunker:
         return DocumentChunk(
             chunk_id=chunk_id,
             pmid=article.pmid,
+            source_type="pubmed",
             text=text,
             section=section,
             chunk_index=index,
+            url=f"https://pubmed.ncbi.nlm.nih.gov/{article.pmid}/",
+            metadata=metadata,
+        )
+
+    def _make_generic_chunk(
+        self,
+        doc: GenericDocument,
+        text: str,
+        section: str,
+        index: int,
+    ) -> DocumentChunk:
+        """Create a DocumentChunk for a non-PubMed source."""
+        chunk_id = str(uuid.uuid5(
+            uuid.NAMESPACE_URL,
+            f"{doc.source_type}:{doc.doc_id}:{section}:{index}",
+        ))
+
+        metadata = dict(doc.metadata)
+        metadata.setdefault("title", doc.title)
+
+        return DocumentChunk(
+            chunk_id=chunk_id,
+            pmid=doc.doc_id,
+            source_type=doc.source_type,
+            text=text,
+            section=section,
+            chunk_index=index,
+            url=doc.url,
             metadata=metadata,
         )

@@ -269,23 +269,29 @@ class ClaudeGenerator:
                 yield text
 
     def _build_citations(self, chunks: list[RerankResult]) -> list[Citation]:
-        """Build citation objects from context chunks."""
-        citations = []
-        seen_pmids = set()
+        """Build citation objects from context chunks.
 
-        for i, chunk in enumerate(chunks):
-            pmid = chunk.pmid
-            if pmid in seen_pmids:
+        Dedup is on (source_type, pmid) so the same drug label or guideline
+        only appears once even if multiple sections of it survive reranking.
+        """
+        citations = []
+        seen: set[tuple[str, str]] = set()
+
+        for chunk in chunks:
+            key = (chunk.source_type, chunk.pmid)
+            if key in seen:
                 continue
-            seen_pmids.add(pmid)
+            seen.add(key)
 
             citations.append(Citation(
                 index=len(citations) + 1,
-                pmid=pmid,
+                pmid=chunk.pmid,
+                source_type=chunk.source_type,
                 title=chunk.metadata.get("title", ""),
                 text_excerpt=chunk.text[:200],
-                journal=chunk.metadata.get("journal", ""),
+                journal=chunk.metadata.get("journal", "") or chunk.metadata.get("manufacturer", ""),
                 doi=chunk.metadata.get("doi"),
+                url=chunk.url or _default_url_for(chunk.source_type, chunk.pmid),
             ))
 
         return citations
@@ -298,13 +304,13 @@ class ClaudeGenerator:
         confidence: str = "medium",
     ) -> str:
         """Build the user message with numbered source documents and confidence context."""
-        # Map PMIDs to citation numbers
-        pmid_to_num = {c.pmid: c.index for c in citations}
+        # Map (source_type, pmid) to citation numbers
+        cite_map = {(c.source_type, c.pmid): c.index for c in citations}
 
         # Build source blocks with relevance labels
         source_blocks = []
         for chunk in chunks:
-            cite_num = pmid_to_num.get(chunk.pmid, "?")
+            cite_num = cite_map.get((chunk.source_type, chunk.pmid), "?")
             # Annotate each source with relevance level so the LLM can weigh them
             if chunk.rerank_score > 0.7:
                 relevance_tag = "HIGHLY RELEVANT"
@@ -313,8 +319,9 @@ class ClaudeGenerator:
             else:
                 relevance_tag = "TANGENTIALLY RELEVANT"
 
+            source_label = _SOURCE_TAGS.get(chunk.source_type, "Source")
             source_blocks.append(
-                f"[Source {cite_num}] (PMID: {chunk.pmid}, "
+                f"[Source {cite_num}] ({source_label}: {chunk.pmid}, "
                 f"Section: {chunk.section}, Relevance: {relevance_tag})\n"
                 f"{chunk.text}"
             )
@@ -333,3 +340,27 @@ class ClaudeGenerator:
             f"---\n\n"
             f"QUESTION: {query}"
         )
+
+
+_SOURCE_TAGS = {
+    "pubmed": "PMID",
+    "guideline": "Guideline (PMID)",
+    "openfda": "FDA Label SetID",
+    "rxnorm": "RxNorm CUI",
+}
+
+
+def _default_url_for(source_type: str, doc_id: str) -> Optional[str]:
+    """Best-effort canonical URL when the chunk didn't carry one in payload."""
+    if not doc_id:
+        return None
+    if source_type in ("pubmed", "guideline"):
+        return f"https://pubmed.ncbi.nlm.nih.gov/{doc_id}/"
+    if source_type == "openfda":
+        # OpenFDA doc_ids stored as ``fda:<set_id>`` — strip the prefix.
+        set_id = doc_id.split(":", 1)[1] if doc_id.startswith("fda:") else doc_id
+        return f"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid={set_id}"
+    if source_type == "rxnorm":
+        rxcui = doc_id.split(":", 1)[1] if doc_id.startswith("rxnorm:") else doc_id
+        return f"https://mor.nlm.nih.gov/RxNav/search?searchBy=RXCUI&searchTerm={rxcui}"
+    return None

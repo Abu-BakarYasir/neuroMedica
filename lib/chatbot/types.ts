@@ -1,11 +1,15 @@
 export type MessageRole = "user" | "assistant" | "system";
 
+export type CitationSource = "pubmed" | "openfda" | "rxnorm" | "guideline";
+
 export interface CitationItem {
   index: number;
   pmid: string;
+  source_type?: CitationSource;
   title: string;
   journal?: string;
   doi?: string | null;
+  url?: string | null;
 }
 
 export interface Message {

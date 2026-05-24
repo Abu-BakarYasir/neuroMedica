@@ -275,9 +275,11 @@ async def _handle_rag_query(
         CitationItem(
             index=c.index,
             pmid=c.pmid,
+            source_type=c.source_type,
             title=c.title,
             journal=c.journal,
             doi=c.doi,
+            url=c.url,
         )
         for c in result.citations
     ]

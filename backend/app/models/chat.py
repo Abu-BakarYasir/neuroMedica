@@ -20,9 +20,11 @@ class ChatRequest(BaseModel):
 class CitationItem(BaseModel):
     index: int
     pmid: str
+    source_type: str = "pubmed"
     title: str = ""
     journal: str = ""
     doi: Optional[str] = None
+    url: Optional[str] = None
 
 
 class ChatResponse(BaseModel):

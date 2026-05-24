@@ -127,6 +127,16 @@ npm test
 4. Build BM25 index from same chunks
 5. Populate Neo4j with UMLS concepts and relationships
 
+**Knowledge sources currently wired into the ingestion pipeline:**
+| Source | Endpoint | Source tag |
+|---|---|---|
+| PubMed research articles | `POST /api/ingestion/ingest` | `pubmed` |
+| Clinical practice guidelines (PubMed `Practice Guideline[pt]`) | `POST /api/ingestion/guidelines` | `guideline` |
+| FDA drug labels (OpenFDA / SPL) | `POST /api/ingestion/openfda` | `openfda` |
+| RxNorm drug concepts (RxNav) | `POST /api/ingestion/rxnorm` | `rxnorm` |
+
+All sources flow through the same chunker → PubMedBERT embedder → Qdrant collection. Each chunk carries a `source_type` payload field so dense + BM25 retrieval, the reranker, CRAG, and the citation builder can all distinguish them. Frontend citation cards render source-aware links: PubMed → pubmed.ncbi.nlm.nih.gov, OpenFDA → DailyMed, RxNorm → RxNav.
+
 ### Phase 3: Hybrid Retrieval
 1. Implement dense retriever (PubMedBERT -> Qdrant)
 2. Implement sparse retriever (BM25)

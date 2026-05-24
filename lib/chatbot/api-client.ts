@@ -30,9 +30,11 @@ function normalizeChatResponse(raw: Record<string, unknown>): ChatResponse {
     citations = citationsRaw.map((c: Record<string, unknown>) => ({
       index: Number(c.index) || 0,
       pmid: String(c.pmid ?? ""),
+      source_type: (c.source_type as CitationItem["source_type"]) ?? "pubmed",
       title: String(c.title ?? ""),
       journal: c.journal != null ? String(c.journal) : undefined,
       doi: c.doi != null ? String(c.doi) : null,
+      url: c.url != null ? String(c.url) : null,
     }));
   }
 
@@ -100,9 +102,11 @@ function normalizeCitations(raw: unknown): CitationItem[] | undefined {
   return raw.map((c: Record<string, unknown>) => ({
     index: Number(c.index) || 0,
     pmid: String(c.pmid ?? ""),
+    source_type: (c.source_type as CitationItem["source_type"]) ?? "pubmed",
     title: String(c.title ?? ""),
     journal: c.journal != null ? String(c.journal) : undefined,
     doi: c.doi != null ? String(c.doi) : null,
+    url: c.url != null ? String(c.url) : null,
   }));
 }
 

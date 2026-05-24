@@ -72,8 +72,10 @@ def reciprocal_rank_fusion(
         fused.append(RetrievalResult(
             chunk_id=original.chunk_id,
             pmid=original.pmid,
+            source_type=original.source_type,
             text=original.text,
             section=original.section,
+            url=original.url,
             score=rrf_scores[chunk_id],
             source="fused",
             metadata={

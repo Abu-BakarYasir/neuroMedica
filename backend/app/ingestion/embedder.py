@@ -59,9 +59,11 @@ class PubMedBERTEmbedder:
             embedded.append(EmbeddedChunk(
                 chunk_id=chunk.chunk_id,
                 pmid=chunk.pmid,
+                source_type=chunk.source_type,
                 text=chunk.text,
                 section=chunk.section,
                 chunk_index=chunk.chunk_index,
+                url=chunk.url,
                 embedding=embedding.tolist(),
                 metadata=chunk.metadata,
             ))

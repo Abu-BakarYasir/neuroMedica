@@ -2,8 +2,51 @@
 
 import { cn } from "@/lib/utils";
 import type { Message, CitationItem } from "@/lib/chatbot/types";
-import { Sparkles, ExternalLink, BookOpen, FileText, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Sparkles, ExternalLink, BookOpen, FileText, AlertTriangle, ShieldCheck, Pill, ScrollText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+
+/* ------------------------------------------------------------------ */
+/*  Source-aware helpers                                              */
+/* ------------------------------------------------------------------ */
+
+function citationLink(c: CitationItem): string {
+  if (c.url) return c.url;
+  switch (c.source_type) {
+    case "openfda": {
+      const setId = c.pmid.startsWith("fda:") ? c.pmid.slice(4) : c.pmid;
+      return `https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=${encodeURIComponent(setId)}`;
+    }
+    case "rxnorm": {
+      const rxcui = c.pmid.startsWith("rxnorm:") ? c.pmid.slice(7) : c.pmid;
+      return `https://mor.nlm.nih.gov/RxNav/search?searchBy=RXCUI&searchTerm=${encodeURIComponent(rxcui)}`;
+    }
+    default:
+      return `https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(c.pmid)}/`;
+  }
+}
+
+function citationSourceMeta(c: CitationItem): {
+  label: string;
+  idLabel: string;
+  idValue: string;
+  icon: typeof BookOpen;
+  linkLabel: string;
+} {
+  switch (c.source_type) {
+    case "openfda": {
+      const setId = c.pmid.startsWith("fda:") ? c.pmid.slice(4) : c.pmid;
+      return { label: "FDA Drug Label", idLabel: "SetID", idValue: setId, icon: Pill, linkLabel: "DailyMed" };
+    }
+    case "rxnorm": {
+      const rxcui = c.pmid.startsWith("rxnorm:") ? c.pmid.slice(7) : c.pmid;
+      return { label: "RxNorm Drug", idLabel: "RxCUI", idValue: rxcui, icon: Pill, linkLabel: "RxNav" };
+    }
+    case "guideline":
+      return { label: "Clinical Guideline", idLabel: "PMID", idValue: c.pmid, icon: ScrollText, linkLabel: "PubMed" };
+    default:
+      return { label: "PubMed", idLabel: "PMID", idValue: c.pmid, icon: BookOpen, linkLabel: "PubMed" };
+  }
+}
 
 interface ChatMessageProps {
   message: Message;
@@ -167,15 +210,16 @@ function renderInline(text: string, citations?: CitationItem[]): React.ReactNode
       const num = parseInt(citeMatch[1], 10);
       const citation = citations.find((c) => c.index === num);
       if (citation) {
+        const meta = citationSourceMeta(citation);
         return (
           <a
             key={i}
-            href={`https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(citation.pmid)}/`}
+            href={citationLink(citation)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center w-4.5 h-4.5 text-[10px] font-bold text-white bg-neuro-primary rounded-full mx-0.5 hover:bg-neuro-primary/80 transition-colors cursor-pointer align-text-top leading-none"
             style={{ minWidth: "18px", minHeight: "18px", padding: "2px 4px" }}
-            title={citation.title || `PMID: ${citation.pmid}`}
+            title={citation.title || `${meta.idLabel}: ${meta.idValue}`}
           >
             {num}
           </a>
@@ -191,8 +235,10 @@ function renderInline(text: string, citations?: CitationItem[]): React.ReactNode
 /* ------------------------------------------------------------------ */
 
 function CitationCard({ citation }: { citation: CitationItem }) {
-  const pubmedUrl = `https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(citation.pmid)}/`;
+  const meta = citationSourceMeta(citation);
+  const primaryUrl = citationLink(citation);
   const doiUrl = citation.doi ? `https://doi.org/${encodeURIComponent(citation.doi)}` : null;
+  const SourceIcon = meta.icon;
 
   return (
     <div className="group relative flex gap-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[hsl(var(--surface-elevated))] p-3 hover:border-neuro-primary/40 hover:shadow-sm transition-all">
@@ -204,6 +250,17 @@ function CitationCard({ citation }: { citation: CitationItem }) {
       </div>
 
       <div className="flex-1 min-w-0">
+        {/* Source-type badge */}
+        <div className="mb-1 flex items-center gap-1.5">
+          <Badge
+            variant="outline"
+            className="text-[10px] uppercase tracking-wide border-neuro-primary/40 text-neuro-primary bg-white font-semibold gap-1"
+          >
+            <SourceIcon className="w-3 h-3" />
+            {meta.label}
+          </Badge>
+        </div>
+
         {/* Title */}
         {citation.title && (
           <p className="text-xs font-medium text-gray-900 dark:text-neutral-100 leading-snug mb-1 line-clamp-2">
@@ -211,25 +268,27 @@ function CitationCard({ citation }: { citation: CitationItem }) {
           </p>
         )}
 
-        {/* Journal + PMID row */}
+        {/* Journal/manufacturer + ID row */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-gray-500 dark:text-neutral-400">
           {citation.journal && (
             <span className="italic">{citation.journal}</span>
           )}
-          <span className="text-gray-300 dark:text-neutral-600">|</span>
-          <span>PMID: {citation.pmid}</span>
+          {citation.journal && <span className="text-gray-300 dark:text-neutral-600">|</span>}
+          <span>
+            {meta.idLabel}: {meta.idValue}
+          </span>
         </div>
 
         {/* Links */}
         <div className="flex flex-wrap gap-2 mt-1.5">
           <a
-            href={pubmedUrl}
+            href={primaryUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-[11px] font-medium text-neuro-primary hover:text-neuro-primary/80 hover:underline transition-colors"
           >
-            <BookOpen className="w-3 h-3" />
-            PubMed
+            <SourceIcon className="w-3 h-3" />
+            {meta.linkLabel}
             <ExternalLink className="w-2.5 h-2.5 opacity-60" />
           </a>
           {doiUrl && (

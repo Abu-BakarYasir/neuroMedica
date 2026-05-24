@@ -60,11 +60,16 @@ class BM25Index:
                 self._documents.append({
                     "chunk_id": str(point.id),
                     "pmid": payload.get("pmid", ""),
+                    "source_type": payload.get("source_type", "pubmed"),
                     "text": payload.get("text", ""),
                     "section": payload.get("section", "abstract"),
+                    "url": payload.get("url"),
                     "metadata": {
                         k: v for k, v in payload.items()
-                        if k not in ("pmid", "text", "section", "chunk_index")
+                        if k not in (
+                            "pmid", "text", "section", "chunk_index",
+                            "source_type", "url",
+                        )
                     },
                 })
 
@@ -108,8 +113,10 @@ class BM25Index:
             results.append(RetrievalResult(
                 chunk_id=doc["chunk_id"],
                 pmid=doc["pmid"],
+                source_type=doc.get("source_type", "pubmed"),
                 text=doc["text"],
                 section=doc["section"],
+                url=doc.get("url"),
                 score=float(score),
                 source="sparse",
                 metadata=doc.get("metadata", {}),

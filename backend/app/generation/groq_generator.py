@@ -15,6 +15,8 @@ from app.generation.claude_generator import (
     INTENT_PROMPTS,
     NO_CONTEXT_PROMPT,
     _CONFIDENCE_INSTRUCTIONS,
+    _SOURCE_TAGS,
+    _default_url_for,
 )
 
 logger = logging.getLogger(__name__)
@@ -83,23 +85,25 @@ class GroqGenerator:
         )
 
     def _build_citations(self, chunks: list[RerankResult]) -> list[Citation]:
-        """Build citation objects from context chunks."""
+        """Build citation objects from context chunks (source-aware)."""
         citations = []
-        seen_pmids = set()
+        seen: set[tuple[str, str]] = set()
 
         for chunk in chunks:
-            pmid = chunk.pmid
-            if pmid in seen_pmids:
+            key = (chunk.source_type, chunk.pmid)
+            if key in seen:
                 continue
-            seen_pmids.add(pmid)
+            seen.add(key)
 
             citations.append(Citation(
                 index=len(citations) + 1,
-                pmid=pmid,
+                pmid=chunk.pmid,
+                source_type=chunk.source_type,
                 title=chunk.metadata.get("title", ""),
                 text_excerpt=chunk.text[:200],
-                journal=chunk.metadata.get("journal", ""),
+                journal=chunk.metadata.get("journal", "") or chunk.metadata.get("manufacturer", ""),
                 doi=chunk.metadata.get("doi"),
+                url=chunk.url or _default_url_for(chunk.source_type, chunk.pmid),
             ))
 
         return citations
@@ -112,11 +116,11 @@ class GroqGenerator:
         confidence: str = "medium",
     ) -> str:
         """Build the user message with numbered source documents and confidence context."""
-        pmid_to_num = {c.pmid: c.index for c in citations}
+        cite_map = {(c.source_type, c.pmid): c.index for c in citations}
 
         source_blocks = []
         for chunk in chunks:
-            cite_num = pmid_to_num.get(chunk.pmid, "?")
+            cite_num = cite_map.get((chunk.source_type, chunk.pmid), "?")
             if chunk.rerank_score > 0.7:
                 relevance_tag = "HIGHLY RELEVANT"
             elif chunk.rerank_score > 0.3:
@@ -124,8 +128,9 @@ class GroqGenerator:
             else:
                 relevance_tag = "TANGENTIALLY RELEVANT"
 
+            source_label = _SOURCE_TAGS.get(chunk.source_type, "Source")
             source_blocks.append(
-                f"[Source {cite_num}] (PMID: {chunk.pmid}, "
+                f"[Source {cite_num}] ({source_label}: {chunk.pmid}, "
                 f"Section: {chunk.section}, Relevance: {relevance_tag})\n"
                 f"{chunk.text}"
             )
