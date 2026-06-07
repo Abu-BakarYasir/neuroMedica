@@ -57,12 +57,23 @@ class HybridRetriever:
         s_top_k = sparse_top_k or top_k * 2
 
         # 1. Dense retrieval (PubMedBERT → Qdrant)
+        # Wrapped so a transient/unavailable vector DB degrades to sparse-only
+        # (and ultimately the CRAG live-PubMed fallback) instead of failing the
+        # whole request — mirrors how graph retrieval is guarded upstream.
         logger.info("Running dense retrieval (top_k=%d)", d_top_k)
-        dense_results = self.dense.search(query=query, top_k=d_top_k)
+        try:
+            dense_results = self.dense.search(query=query, top_k=d_top_k)
+        except Exception as e:
+            logger.warning("Dense retrieval failed, continuing without it: %s", e)
+            dense_results = []
 
         # 2. Sparse retrieval (BM25)
         logger.info("Running sparse retrieval (top_k=%d)", s_top_k)
-        sparse_results = self.bm25.search(query=query, top_k=s_top_k)
+        try:
+            sparse_results = self.bm25.search(query=query, top_k=s_top_k)
+        except Exception as e:
+            logger.warning("Sparse retrieval failed, continuing without it: %s", e)
+            sparse_results = []
 
         # 3. Fuse with RRF
         fused = reciprocal_rank_fusion(

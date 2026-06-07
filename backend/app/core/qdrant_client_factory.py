@@ -25,6 +25,13 @@ def make_qdrant_client(
 
     Set ``QDRANT_PREFER_GRPC=1`` if corporate HTTP proxies break localhost REST (WinError 10054).
     """
+    # Embedded on-disk mode: when QDRANT_LOCAL_PATH is set, run Qdrant in-process
+    # (no server / Docker needed). Useful for local dev when the hosted cluster
+    # is unavailable. The URL/api_key are ignored in this mode.
+    local_path = os.environ.get("QDRANT_LOCAL_PATH", "").strip()
+    if local_path:
+        return QdrantClient(path=local_path)
+
     prefer_grpc = False
     env_grpc = os.environ.get("QDRANT_PREFER_GRPC", "").strip().lower()
     if env_grpc in ("1", "true", "yes"):
@@ -51,6 +58,15 @@ def get_qdrant_client(
     per-request connection overhead.
     """
     global _qdrant_client, _qdrant_key
+    # Embedded (on-disk) mode allows only ONE client per path/process, so ignore
+    # timeout/url variations and always reuse the single instance.
+    local_path = os.environ.get("QDRANT_LOCAL_PATH", "").strip()
+    if local_path:
+        if _qdrant_client is None:
+            _qdrant_client = make_qdrant_client(url, api_key, timeout=timeout)
+            _qdrant_key = ("local", local_path)
+        return _qdrant_client
+
     key = (url, api_key, timeout)
     if _qdrant_client is None or _qdrant_key != key:
         _qdrant_client = make_qdrant_client(url, api_key, timeout=timeout)

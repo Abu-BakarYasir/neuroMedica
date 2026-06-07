@@ -1,11 +1,21 @@
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import httpx
+import os
 from app.core.config import settings
 from typing import Optional
 
 
 security = HTTPBearer()
+
+
+def _auth_bypass_enabled() -> bool:
+    """Local-dev escape hatch: when DEV_AUTH_BYPASS is truthy, skip Supabase
+    token verification. Used only for offline local demos when the Supabase
+    project is unreachable. Never enable in production."""
+    return os.environ.get("DEV_AUTH_BYPASS", "").strip().lower() in (
+        "1", "true", "yes",
+    )
 
 
 async def verify_supabase_token(
@@ -16,7 +26,10 @@ async def verify_supabase_token(
     Uses Supabase Admin API to verify the token.
     """
     token = credentials.credentials
-    
+
+    if _auth_bypass_enabled():
+        return {"user_id": "dev-local", "email": "dev@local", "token": token}
+
     try:
         # Verify token with Supabase Admin API
         async with httpx.AsyncClient() as client:

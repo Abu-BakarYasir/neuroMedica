@@ -78,5 +78,17 @@ async def health_check():
     }
 
 
+@app.get("/demo")
+async def demo_page():
+    """Local-only Med Assistant demo UI (served same-origin so it can call the
+    streaming chat API without CORS). Requires DEV_AUTH_BYPASS for offline use."""
+    import os
+    from fastapi.responses import FileResponse, JSONResponse
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "demo.html")
+    if not os.path.exists(path):
+        return JSONResponse({"error": "demo page not found"}, status_code=404)
+    return FileResponse(path)
+
+
 
 
