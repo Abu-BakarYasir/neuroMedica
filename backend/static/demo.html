@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Med Assistant — NeuroMedica</title>
+<style>
+  :root { --orange:#f97316; --orange-soft:#fff3ec; --ink:#1f2937; --muted:#6b7280;
+          --line:#e5e7eb; --bg:#f9fafb; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; font-family:"Segoe UI",system-ui,Arial,sans-serif; color:var(--ink); }
+  body { display:flex; height:100vh; background:var(--bg); }
+
+  /* Sidebar */
+  .sidebar { width:248px; background:#fff; border-right:1px solid var(--line); padding:14px; display:flex; flex-direction:column; gap:14px; }
+  .newchat { display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:8px; padding:9px 12px; font-size:14px; font-weight:600; cursor:pointer; }
+  .search { border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:13px; color:var(--muted); }
+  .sec { font-size:11px; letter-spacing:.04em; color:var(--muted); text-transform:uppercase; margin-top:6px; }
+  .conv { font-size:14px; padding:9px 10px; border-radius:8px; cursor:pointer; }
+  .conv.active { background:var(--orange-soft); color:var(--orange); font-weight:600; }
+
+  /* Main */
+  .main { flex:1; display:flex; flex-direction:column; min-width:0; background:#fff; }
+  .header { display:flex; align-items:center; gap:12px; padding:14px 22px; border-bottom:1px solid var(--line); }
+  .avatar { width:38px; height:38px; border-radius:50%; background:var(--orange); color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .htitle { font-weight:700; font-size:16px; display:flex; align-items:center; gap:8px; }
+  .badge-ai { font-size:10px; background:#eef2ff; color:#4f46e5; padding:1px 6px; border-radius:6px; font-weight:700; }
+  .hsub { font-size:12px; color:var(--muted); }
+
+  .scroll { flex:1; overflow-y:auto; padding:26px 0; }
+  .thread { max-width:780px; margin:0 auto; padding:0 24px; display:flex; flex-direction:column; gap:22px; }
+
+  .row { display:flex; gap:12px; }
+  .row.user { justify-content:flex-end; }
+  .bubble-user { background:var(--orange); color:#fff; padding:12px 16px; border-radius:14px 14px 4px 14px; max-width:74%; font-size:14.5px; line-height:1.5; }
+  .bot-ic { width:30px; height:30px; border-radius:50%; background:var(--orange-soft); color:var(--orange); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:15px; }
+  .bot { max-width:84%; }
+  .bot .text { font-size:14.5px; line-height:1.62; white-space:pre-wrap; }
+  .bot .text h3 { font-size:15px; margin:14px 0 6px; }
+  .time { font-size:11px; color:var(--muted); margin-top:7px; }
+
+  .meta-line { display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap; }
+  .conf { font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; }
+  .conf.high { background:#dcfce7; color:#15803d; }
+  .conf.medium { background:#fef9c3; color:#a16207; }
+  .conf.insufficient { background:#fee2e2; color:#b91c1c; }
+
+  .cites { margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .cite { border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:12.5px; background:#fcfcfd; }
+  .cite .ci { display:inline-flex; width:18px; height:18px; background:var(--orange); color:#fff; border-radius:5px; font-size:11px; font-weight:700; align-items:center; justify-content:center; margin-right:7px; }
+  .cite .tt { font-weight:600; line-height:1.35; }
+  .cite .src { margin-top:6px; display:inline-block; font-size:10.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); border:1px solid var(--line); border-radius:5px; padding:1px 6px; }
+  .cite a { color:var(--orange); text-decoration:none; font-size:11.5px; }
+
+  .disc { display:flex; gap:8px; align-items:flex-start; background:#fafafa; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:12px; color:var(--muted); margin-top:6px; }
+
+  /* Composer */
+  .composer { border-top:1px solid var(--line); padding:14px 24px 18px; }
+  .composer-inner { max-width:780px; margin:0 auto; }
+  .rag-toggle { display:flex; align-items:center; gap:8px; font-size:13.5px; margin-bottom:8px; }
+  .rag-toggle input { width:16px; height:16px; accent-color:var(--orange); }
+  .rag-toggle .lbl { font-weight:600; display:flex; align-items:center; gap:6px; }
+  .rag-toggle .hint { color:var(--muted); font-size:12px; font-weight:400; }
+  .inputbar { display:flex; gap:10px; align-items:center; border:1px solid var(--line); border-radius:12px; padding:8px 8px 8px 14px; }
+  .inputbar input { flex:1; border:none; outline:none; font-size:14.5px; }
+  .send { width:38px; height:38px; border-radius:9px; background:var(--orange-soft); color:var(--orange); border:none; cursor:pointer; font-size:16px; }
+  .foot { text-align:center; font-size:11.5px; color:var(--muted); margin-top:9px; }
+</style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="newchat">✚ New Chat</div>
+    <div class="search">🔍 Search conversations…</div>
+    <div class="sec">Today</div>
+    <div class="conv active" id="conv-active">New Chat</div>
+    <div class="sec">Yesterday</div>
+    <div class="conv">Metformin mechanism</div>
+    <div class="conv">Statin therapy review</div>
+    <div class="conv">Anticoagulation Q&amp;A</div>
+  </aside>
+
+  <main class="main">
+    <header class="header">
+      <div class="avatar">MA</div>
+      <div>
+        <div class="htitle">Med Assistant <span class="badge-ai">AI</span></div>
+        <div class="hsub">What are you looking for today?</div>
+      </div>
+    </header>
+
+    <div class="scroll" id="scroll">
+      <div class="thread" id="thread"></div>
+    </div>
+
+    <div class="composer">
+      <div class="composer-inner">
+        <label class="rag-toggle">
+          <input type="checkbox" id="rag" checked />
+          <span class="lbl">📖 Evidence-based answers (RAG)</span>
+          <span class="hint">Uses PubMed-indexed sources when available; response may include citations and confidence.</span>
+        </label>
+        <div class="inputbar">
+          <input id="msg" placeholder="Type your message..."
+                 value="What is the mechanism of action of metformin?" />
+          <button class="send" id="send">➤</button>
+        </div>
+        <div class="foot">Med Assistant may make mistakes. Please verify important information.</div>
+      </div>
+    </div>
+  </main>
+
+<script>
+const thread = document.getElementById('thread');
+const scroll = document.getElementById('scroll');
+function now(){ const d=new Date(); let h=d.getHours(),m=d.getMinutes();
+  const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${String(m).padStart(2,'0')} ${ap}`; }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(t){ // light markdown: **bold**, ## headings
+  t = esc(t);
+  t = t.replace(/^##\s*\**(.+?)\**\s*$/gm,'<h3>$1</h3>');
+  t = t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  return t;
+}
+const srcUrl = (c) => c.url || (c.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${c.pmid}/` : '#');
+const srcHost = (c) => { try { return new URL(srcUrl(c)).hostname.replace('www.',''); } catch(e){ return 'source'; } };
+
+function addUser(text){
+  const row=document.createElement('div'); row.className='row user';
+  row.innerHTML=`<div><div class="bubble-user">${esc(text)}</div><div class="time" style="text-align:right">${now()}</div></div>`;
+  thread.appendChild(row); scroll.scrollTop=scroll.scrollHeight;
+}
+function addBot(){
+  const row=document.createElement('div'); row.className='row';
+  row.innerHTML=`<div class="bot-ic">✦</div><div class="bot">
+     <div class="text"></div>
+     <div class="meta-line"></div>
+     <div class="cites" style="display:none"></div>
+     <div class="time">${now()}</div></div>`;
+  thread.appendChild(row); scroll.scrollTop=scroll.scrollHeight;
+  return { text:row.querySelector('.text'), meta:row.querySelector('.meta-line'),
+           cites:row.querySelector('.cites'), row };
+}
+
+async function send(){
+  const inp=document.getElementById('msg'); const text=inp.value.trim();
+  if(!text) return; inp.value='';
+  const useRag=document.getElementById('rag').checked;
+  addUser(text);
+  const bot=addBot();
+  let buf='';
+
+  const resp=await fetch('/api/chat/stream',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer dev'},
+    body:JSON.stringify({message:text, history:[], use_rag:useRag})
+  });
+  const reader=resp.body.getReader(); const dec=new TextDecoder();
+  let acc='';
+  while(true){
+    const {value,done}=await reader.read(); if(done) break;
+    acc+=dec.decode(value,{stream:true});
+    const parts=acc.split('\n\n'); acc=parts.pop();
+    for(const p of parts){
+      const line=p.split('\n').find(l=>l.startsWith('data: ')); if(!line) continue;
+      const ev=JSON.parse(line.slice(6));
+      if(ev.type==='delta'){ buf+=ev.text; bot.text.innerHTML=fmt(buf); }
+      if(ev.type==='meta' && (ev.citations||ev.confidence)){
+        if(ev.confidence){
+          bot.meta.innerHTML=`<span class="conf ${ev.confidence}">Confidence: ${ev.confidence}</span>`;
+        }
+        if(ev.citations && ev.citations.length){
+          bot.cites.style.display='grid';
+          bot.cites.innerHTML=ev.citations.map(c=>`
+            <div class="cite">
+              <div><span class="ci">${c.index}</span><span class="tt">${esc(c.title||'Untitled source')}</span></div>
+              <span class="src">${esc(c.source_type||'pubmed')}</span>
+              <div style="margin-top:6px"><a href="${srcUrl(c)}" target="_blank">${srcHost(c)} ↗</a></div>
+            </div>`).join('');
+        }
+        if(ev.disclaimer){
+          const d=document.createElement('div'); d.className='disc';
+          d.innerHTML=`⚠️ ${esc(ev.disclaimer)}`;
+          bot.row.querySelector('.bot').insertBefore(d, bot.row.querySelector('.time'));
+        }
+      }
+      scroll.scrollTop=scroll.scrollHeight;
+    }
+  }
+  scroll.scrollTop=scroll.scrollHeight;
+}
+document.getElementById('send').onclick=send;
+document.getElementById('msg').addEventListener('keydown',e=>{ if(e.key==='Enter') send(); });
+</script>
+</body>
+</html>

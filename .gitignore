@@ -47,23 +47,31 @@ backend/.env
 *.tsbuildinfo
 next-env.d.ts
 
- # python
-  __pycache__/
-  *.pyc
-  *.pyo
-  .pytest_cache/
-  venv/
-  backend/venv/
+# python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+venv/
+backend/venv/
 
-  # claude code tooling
-  .claude/
-  .claude-flow/
-  .swarm/
-  .mcp.json
+# claude code tooling
+.claude/
+.claude-flow/
+.swarm/
+.mcp.json
 
-  # ML model artifacts (drop locally into backend/models/, never committed)
-  backend/models/*.keras
-  backend/models/*.h5
-  backend/models/*.pkl
-  backend/models/*.packed.keras
-  /neuroMedica_ecg_model.keras
+# Qdrant embedded mode local data
+backend/qdrant_local_data/
+
+# ML model artifacts — large/locally-derived caches
+backend/models/*.h5
+backend/models/*.pkl
+backend/models/*.packed.keras
+/neuroMedica_ecg_model.keras
+
+# Local screenshots from browser tests
+/chat-*.png
+/rag-*.png
+/verify-ecg-*.png
+/ecg-new-model-*.png
