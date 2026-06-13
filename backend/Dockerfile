@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PyTorch CPU-only first (saves ~2GB vs full torch with CUDA)
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+# torchvision supplies the DenseNet-121 backbone for the chest X-ray model.
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # Install remaining Python deps
 COPY requirements.txt .

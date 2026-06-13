@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { ClinicalComingSoon } from "@/components/doctors/clinical-coming-soon";
-import { Stethoscope } from "lucide-react";
 
-async function ChestXRayContent() {
+import { createClient } from "@/lib/supabase/server";
+import { CxrAnalyzer } from "@/components/cxr/cxr-analyzer";
+
+async function ChestXRayGate() {
   const supabase = await createClient();
   const {
     data: { session },
@@ -14,19 +14,19 @@ async function ChestXRayContent() {
     redirect("/auth/login");
   }
 
-  return (
-    <ClinicalComingSoon
-      title="Chest X-ray Analysis"
-      description="Multi-label classification with visual explanations"
-      Icon={Stethoscope}
-    />
-  );
+  return <CxrAnalyzer />;
 }
 
 export default function ChestXRayPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
-      <ChestXRayContent />
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full text-sm text-[#525252]">
+          Loading…
+        </div>
+      }
+    >
+      <ChestXRayGate />
     </Suspense>
   );
 }
