@@ -142,6 +142,93 @@ class RAGService:
             logger.warning("Neo4j unavailable, skipping graph retrieval: %s", e)
             return None
 
+    async def _retrieve_context(
+        self, question: str, top_k: int = 10
+    ) -> tuple[list, str, QueryIntent]:
+        """Steps 0-4 of the pipeline: query understanding -> hybrid retrieval
+        (+ optional graph) -> rerank -> CRAG -> live-PubMed fallback.
+
+        Returns (context_chunks, confidence, intent). Shared by query(),
+        query_stream(), and explore_symptoms() so retrieval stays identical.
+        """
+        # Step 0: Query understanding
+        intent = classify_query(question)
+        mesh_term = await self._resolve_mesh_term(question)
+        logger.info(
+            "RAG Step 0: intent=%s, mesh_term=%s", intent.value, mesh_term or "none",
+        )
+
+        # Steps 1-2: Hybrid retrieval with RRF
+        hybrid = HybridRetriever(
+            dense_retriever=self._get_dense_retriever(),
+            bm25_index=self._get_bm25_index(),
+            rrf_k=settings.rrf_k,
+            dense_weight=settings.dense_weight,
+            sparse_weight=settings.sparse_weight,
+        )
+        retrieval_response = hybrid.search(query=question, top_k=top_k * 3)
+
+        # Optional: Graph retrieval + re-fuse
+        graph_retriever = self._get_graph_retriever()
+        if graph_retriever:
+            try:
+                graph_results = graph_retriever.search(question, top_k=top_k)
+                if graph_results:
+                    retrieval_response.results = reciprocal_rank_fusion(
+                        result_lists=[retrieval_response.results, graph_results],
+                        k=settings.rrf_k,
+                        top_n=top_k * 3,
+                        weights=[1.0, 0.5],
+                    )
+            except Exception as e:
+                logger.warning("Graph retrieval failed, continuing without: %s", e)
+
+        # Step 3: Rerank
+        logger.info("RAG Step 3: Reranking %d candidates", len(retrieval_response.results))
+        reranked = self._reranker.rerank(
+            query=question, candidates=retrieval_response.results, top_n=top_k,
+        )
+
+        # Step 4: CRAG evaluation
+        logger.info("RAG Step 4: CRAG evaluation")
+        crag_result = self._crag.evaluate(
+            query=question, reranked_results=reranked.results,
+        )
+
+        confidence = "medium"
+        context_chunks = crag_result.accepted_chunks
+        if crag_result.action_taken == "proceed":
+            confidence = "high"
+        elif crag_result.action_taken == "fallback":
+            logger.info("CRAG fallback: attempting live PubMed search for '%s'", question[:80])
+            live_chunks = await self._live_pubmed_fallback(
+                question, intent=intent, mesh_term=mesh_term, top_k=top_k
+            )
+            if live_chunks:
+                confidence = "medium"
+                context_chunks = live_chunks
+            else:
+                confidence = "insufficient"
+                context_chunks = []
+        elif crag_result.action_taken == "refine":
+            confidence = "medium"
+            if crag_result.refinement_queries:
+                extra = await self._refine_retrieval(
+                    crag_result.refinement_queries, top_k=5
+                )
+                context_chunks.extend(extra)
+            if not context_chunks:
+                logger.info("CRAG refine yielded no chunks: attempting live PubMed search")
+                live_chunks = await self._live_pubmed_fallback(
+                    question, intent=intent, mesh_term=mesh_term, top_k=top_k
+                )
+                if live_chunks:
+                    context_chunks = live_chunks
+                else:
+                    confidence = "insufficient"
+
+        return context_chunks, confidence, intent
+
     async def query(
         self,
         question: str,
@@ -159,92 +246,10 @@ class RAGService:
             4b. Live PubMed fallback with intent-aware search (if needed)
             5. Intent-aware generation with citations
         """
-        # Step 0: Query understanding
-        intent = classify_query(question)
-        mesh_term = await self._resolve_mesh_term(question)
-        logger.info(
-            "RAG Step 0: Query understanding — intent=%s, mesh_term=%s",
-            intent.value, mesh_term or "none",
+        # Steps 0-4: query understanding -> retrieval -> rerank -> CRAG -> fallback
+        context_chunks, confidence, intent = await self._retrieve_context(
+            question, top_k=top_k
         )
-
-        # Step 1 & 2: Hybrid retrieval with RRF
-        logger.info("RAG Step 1-2: Hybrid retrieval for '%s'", question[:80])
-        hybrid = HybridRetriever(
-            dense_retriever=self._get_dense_retriever(),
-            bm25_index=self._get_bm25_index(),
-            rrf_k=settings.rrf_k,
-            dense_weight=settings.dense_weight,
-            sparse_weight=settings.sparse_weight,
-        )
-        retrieval_response = hybrid.search(query=question, top_k=top_k * 3)
-
-        # Optional: Graph retrieval + re-fuse
-        graph_retriever = self._get_graph_retriever()
-        if graph_retriever:
-            try:
-                graph_results = graph_retriever.search(question, top_k=top_k)
-                if graph_results:
-                    combined = reciprocal_rank_fusion(
-                        result_lists=[retrieval_response.results, graph_results],
-                        k=settings.rrf_k,
-                        top_n=top_k * 3,
-                        weights=[1.0, 0.5],
-                    )
-                    retrieval_response.results = combined
-            except Exception as e:
-                logger.warning("Graph retrieval failed, continuing without: %s", e)
-
-        # Step 3: Rerank
-        logger.info("RAG Step 3: Reranking %d candidates", len(retrieval_response.results))
-        reranked = self._reranker.rerank(
-            query=question,
-            candidates=retrieval_response.results,
-            top_n=top_k,
-        )
-
-        # Step 4: CRAG evaluation
-        logger.info("RAG Step 4: CRAG evaluation")
-        crag_result = self._crag.evaluate(
-            query=question,
-            reranked_results=reranked.results,
-        )
-
-        # Determine confidence and context based on CRAG action
-        confidence = "medium"
-        context_chunks = crag_result.accepted_chunks
-
-        if crag_result.action_taken == "proceed":
-            confidence = "high"
-        elif crag_result.action_taken == "fallback":
-            # Local corpus lacks relevant docs — try live PubMed search
-            logger.info("CRAG fallback: attempting live PubMed search for '%s'", question[:80])
-            live_chunks = await self._live_pubmed_fallback(
-                question, intent=intent, mesh_term=mesh_term, top_k=top_k
-            )
-            if live_chunks:
-                confidence = "medium"
-                context_chunks = live_chunks
-            else:
-                confidence = "insufficient"
-                context_chunks = []
-        elif crag_result.action_taken == "refine":
-            confidence = "medium"
-            # Try refinement queries for additional context
-            if crag_result.refinement_queries:
-                extra = await self._refine_retrieval(
-                    crag_result.refinement_queries, top_k=5
-                )
-                context_chunks.extend(extra)
-            # If refine still yielded nothing useful, try live PubMed
-            if not context_chunks:
-                logger.info("CRAG refine yielded no chunks: attempting live PubMed search")
-                live_chunks = await self._live_pubmed_fallback(
-                    question, intent=intent, mesh_term=mesh_term, top_k=top_k
-                )
-                if live_chunks:
-                    context_chunks = live_chunks
-                else:
-                    confidence = "insufficient"
 
         # Step 5: Generate answer with intent-aware prompt
         logger.info(
@@ -276,74 +281,10 @@ class RAGService:
         token-by-token from Claude. Frontend can render citations + confidence
         immediately while the prose streams in.
         """
-        # Steps 0-4: same as query()
-        intent = classify_query(question)
-        mesh_term = await self._resolve_mesh_term(question)
-        logger.info(
-            "RAG-stream Step 0: intent=%s, mesh=%s", intent.value, mesh_term or "none",
+        # Steps 0-4: shared retrieval pipeline
+        context_chunks, confidence, intent = await self._retrieve_context(
+            question, top_k=top_k
         )
-
-        hybrid = HybridRetriever(
-            dense_retriever=self._get_dense_retriever(),
-            bm25_index=self._get_bm25_index(),
-            rrf_k=settings.rrf_k,
-            dense_weight=settings.dense_weight,
-            sparse_weight=settings.sparse_weight,
-        )
-        retrieval_response = hybrid.search(query=question, top_k=top_k * 3)
-
-        graph_retriever = self._get_graph_retriever()
-        if graph_retriever:
-            try:
-                graph_results = graph_retriever.search(question, top_k=top_k)
-                if graph_results:
-                    combined = reciprocal_rank_fusion(
-                        result_lists=[retrieval_response.results, graph_results],
-                        k=settings.rrf_k,
-                        top_n=top_k * 3,
-                        weights=[1.0, 0.5],
-                    )
-                    retrieval_response.results = combined
-            except Exception as e:
-                logger.warning("Graph retrieval failed in stream path: %s", e)
-
-        reranked = self._reranker.rerank(
-            query=question, candidates=retrieval_response.results, top_n=top_k,
-        )
-
-        crag_result = self._crag.evaluate(
-            query=question, reranked_results=reranked.results,
-        )
-
-        confidence = "medium"
-        context_chunks = crag_result.accepted_chunks
-        if crag_result.action_taken == "proceed":
-            confidence = "high"
-        elif crag_result.action_taken == "fallback":
-            live = await self._live_pubmed_fallback(
-                question, intent=intent, mesh_term=mesh_term, top_k=top_k,
-            )
-            if live:
-                context_chunks = live
-                confidence = "medium"
-            else:
-                context_chunks = []
-                confidence = "insufficient"
-        elif crag_result.action_taken == "refine":
-            confidence = "medium"
-            if crag_result.refinement_queries:
-                extra = await self._refine_retrieval(
-                    crag_result.refinement_queries, top_k=5
-                )
-                context_chunks.extend(extra)
-            if not context_chunks:
-                live = await self._live_pubmed_fallback(
-                    question, intent=intent, mesh_term=mesh_term, top_k=top_k,
-                )
-                if live:
-                    context_chunks = live
-                else:
-                    confidence = "insufficient"
 
         # Build citations now so the frontend can render the citation chips
         # while the prose is still streaming.
@@ -548,3 +489,52 @@ class RAGService:
                 logger.warning("Refinement query failed: %s", e)
 
         return extra_results
+
+    async def explore_symptoms(self, symptoms: str, top_k: int = 10) -> dict:
+        """Symptom -> structured differential diagnosis, grounded in retrieved
+        literature. Reuses the same retrieval pipeline as query(); the answer is
+        a structured differential payload instead of prose."""
+        question = (
+            "Differential diagnosis for a patient presenting with: " + symptoms
+        )
+        context_chunks, confidence, _intent = await self._retrieve_context(
+            question, top_k=top_k
+        )
+
+        citations = (
+            self._generator._build_citations(context_chunks)
+            if hasattr(self._generator, "_build_citations") else []
+        )
+        disclaimer = (
+            "This information is for educational purposes only. Always consult "
+            "qualified healthcare professionals for clinical decisions."
+        )
+
+        if hasattr(self._generator, "generate_differential"):
+            payload = self._generator.generate_differential(
+                symptoms=symptoms,
+                context_chunks=context_chunks,
+                citations=citations,
+                confidence=confidence,
+            )
+        else:
+            # Groq fallback: no structured path — surface a prose answer.
+            result = self._generator.generate(
+                query=question, context_chunks=context_chunks,
+                confidence=confidence, query_intent="diagnostic",
+            )
+            payload = {
+                "structured": False, "summary": result.answer,
+                "differentials": [], "recommended_workup": [],
+            }
+
+        return {
+            "symptoms": symptoms,
+            "differentials": payload.get("differentials", []),
+            "summary": payload.get("summary", ""),
+            "recommended_workup": payload.get("recommended_workup", []),
+            "structured": payload.get("structured", True),
+            "citations": [c.model_dump() for c in citations],
+            "confidence": confidence,
+            "disclaimer": disclaimer,
+        }

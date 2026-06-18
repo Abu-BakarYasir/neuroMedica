@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from app.core.config import settings
-from app.api import chat, ingestion, retrieval, reranking, ecg, cxr
+from app.api import chat, ingestion, retrieval, reranking, ecg, cxr, symptoms
 
 # Configure logging
 logging.basicConfig(
@@ -64,6 +64,7 @@ app.include_router(retrieval.router)
 app.include_router(reranking.router)
 app.include_router(ecg.router)
 app.include_router(cxr.router)
+app.include_router(symptoms.router)
 
 
 @app.get("/")

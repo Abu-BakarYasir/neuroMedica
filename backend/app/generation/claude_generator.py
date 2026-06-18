@@ -5,6 +5,7 @@ Strong instruction-following for citation formatting. System prompts
 enforce "I don't know" for unsupported claims.
 """
 
+import json
 import logging
 from typing import AsyncIterator, Optional
 
@@ -130,6 +131,102 @@ Respond with:
 
 Do NOT guess, speculate, or fabricate medical information.
 """
+
+# ── Symptom Explorer: structured differential-diagnosis prompt ────────────
+
+DIFFERENTIAL_PROMPT = """You are NeuroMedica, a medical research assistant. The user provides a patient's presenting symptoms plus numbered SOURCE documents retrieved from the literature.
+
+Produce a DIFFERENTIAL DIAGNOSIS grounded in the sources. Respond with ONLY a single JSON object — no markdown, no code fences, no prose before or after — matching exactly this shape:
+
+{
+  "differentials": [
+    {
+      "condition": "string — the candidate diagnosis",
+      "icd10": "string or null — best-guess ICD-10 code (AI-suggested, may be inaccurate)",
+      "snomed": "string or null — best-guess SNOMED CT code, or null",
+      "likelihood": "high | moderate | low",
+      "rationale": "string — why this fits the presentation, citing source numbers like [1], [2]",
+      "supporting_citations": [1, 2],
+      "red_flags": "string or null — features that would make this condition urgent, or null"
+    }
+  ],
+  "summary": "string — a 1-3 sentence overview of the differential and the key next step",
+  "recommended_workup": ["string", "..."]
+}
+
+RULES:
+- Base the differential and every claim ONLY on the provided sources; cite source numbers in rationale and supporting_citations.
+- Order differentials most-to-least likely. Include 3-6 candidates when the evidence supports them.
+- ICD-10 / SNOMED codes are your best guess from general knowledge (the sources rarely contain them); they are AI-suggested and may be wrong. Use null when unsure rather than guessing wildly.
+- If the sources are insufficient to support a differential, return an empty "differentials" array and explain the gap in "summary".
+- NEVER fabricate citations or sources. Output valid JSON only.
+"""
+
+
+def parse_differential_payload(text: str) -> dict:
+    """Defensively parse the model's differential JSON.
+
+    Strips ```json fences and any prose around the object, extracts the
+    outermost {...}, validates the shape, and normalizes fields. On any failure
+    returns a prose fallback (structured=False) so the feature never hard-fails.
+    """
+    fallback = {
+        "structured": False,
+        "summary": (text or "").strip(),
+        "differentials": [],
+        "recommended_workup": [],
+    }
+    if not text or not text.strip():
+        return fallback
+
+    candidate = text.strip()
+    if candidate.startswith("```"):
+        candidate = candidate.strip("`")
+        nl = candidate.find("\n")
+        if nl != -1 and candidate[:nl].strip().lower() in ("json", ""):
+            candidate = candidate[nl + 1:]
+
+    start, end = candidate.find("{"), candidate.rfind("}")
+    if start == -1 or end <= start:
+        return fallback
+    try:
+        data = json.loads(candidate[start:end + 1])
+    except Exception:
+        return fallback
+    if not isinstance(data, dict) or not isinstance(data.get("differentials"), list):
+        return fallback
+
+    differentials = []
+    for d in data["differentials"]:
+        if not isinstance(d, dict) or not d.get("condition"):
+            continue
+        raw_cites = d.get("supporting_citations")
+        cites = (
+            [int(x) for x in raw_cites if isinstance(x, (int, float))]
+            if isinstance(raw_cites, list) else []
+        )
+        likelihood = str(d.get("likelihood", "moderate")).lower()
+        if likelihood not in ("high", "moderate", "low"):
+            likelihood = "moderate"
+        differentials.append({
+            "condition": str(d.get("condition")),
+            "icd10": str(d["icd10"]) if d.get("icd10") else None,
+            "snomed": str(d["snomed"]) if d.get("snomed") else None,
+            "likelihood": likelihood,
+            "rationale": str(d.get("rationale", "")),
+            "supporting_citations": cites,
+            "red_flags": str(d["red_flags"]) if d.get("red_flags") else None,
+        })
+
+    workup = data.get("recommended_workup")
+    workup = [str(x) for x in workup] if isinstance(workup, list) else []
+    return {
+        "structured": True,
+        "summary": str(data.get("summary", "")),
+        "differentials": differentials,
+        "recommended_workup": workup,
+    }
+
 
 # ── Confidence-level instructions prepended to user message ───────────────
 
@@ -267,6 +364,36 @@ class ClaudeGenerator:
         ) as stream:
             async for text in stream.text_stream:
                 yield text
+
+    def generate_differential(
+        self,
+        symptoms: str,
+        context_chunks: list[RerankResult],
+        citations: list[Citation],
+        confidence: str = "medium",
+    ) -> dict:
+        """Generate a structured differential-diagnosis payload from retrieved
+        context. Returns a dict: {structured, differentials, summary,
+        recommended_workup}. Always succeeds — falls back to prose on bad JSON.
+        """
+        query = (
+            f"Patient presents with: {symptoms}. "
+            "Provide a differential diagnosis grounded in the sources."
+        )
+        user_message = self._build_context_message(
+            query, context_chunks, citations, confidence
+        )
+        logger.info(
+            "Generating differential (model=%s, context_chunks=%d, confidence=%s)",
+            self.model, len(context_chunks), confidence,
+        )
+        response = self._client.messages.create(
+            model=self.model,
+            max_tokens=self.max_tokens,
+            system=DIFFERENTIAL_PROMPT,
+            messages=[{"role": "user", "content": user_message}],
+        )
+        return parse_differential_payload(response.content[0].text)
 
     def _build_citations(self, chunks: list[RerankResult]) -> list[Citation]:
         """Build citation objects from context chunks.
