@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # Generation (Claude API)
     anthropic_api_key: str = ""
-    claude_model: str = "claude-sonnet-4-20250514"
+    claude_model: str = "claude-sonnet-4-6"
     claude_max_tokens: int = 2048
 
     # Knowledge Graph (Neo4j)
