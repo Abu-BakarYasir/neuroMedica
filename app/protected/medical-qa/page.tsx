@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { ClinicalComingSoon } from "@/components/doctors/clinical-coming-soon";
-import { BookOpen } from "lucide-react";
+import { MedicalQaViewer } from "@/components/medical-qa/medical-qa-viewer";
 
 async function MedicalQaContent() {
   const supabase = await createClient();
@@ -14,13 +13,7 @@ async function MedicalQaContent() {
     redirect("/auth/login");
   }
 
-  return (
-    <ClinicalComingSoon
-      title="Medical Q&A"
-      description="Reference-grounded answers with citations"
-      Icon={BookOpen}
-    />
-  );
+  return <MedicalQaViewer />;
 }
 
 export default function MedicalQaPage() {
