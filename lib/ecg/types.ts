@@ -32,7 +32,7 @@ export interface EcgAnalysisResponse {
   summary: AnalysisSummary;
   beats: BeatPrediction[];
   classes: ClassInfo[];
-  source_format: "wide" | "long" | "sample";
+  source_format: "wide" | "long" | "sample" | "image";
   notes: Record<string, unknown>;
   disclaimer: string;
 }

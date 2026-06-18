@@ -31,5 +31,9 @@ tensorflow-cpu>=2.16.0
 # Optional R-peak detection for raw single-lead signals (long-format uploads).
 neurokit2>=0.2.10
 numpy>=1.26.0
+# Signal processing for the long path + ECG-image digitization (Otsu, resample,
+# baseline high-pass). Pulled in transitively by neurokit2; pinned here so the
+# image digitizer's dependency is explicit.
+scipy>=1.11.0
 
 

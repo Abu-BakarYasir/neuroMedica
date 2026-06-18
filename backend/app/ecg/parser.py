@@ -116,12 +116,19 @@ def _parse_wide(matrix: np.ndarray) -> ParsedBeats:
     )
 
 
-def _segment_long(
-    matrix: np.ndarray, sampling_rate: int
+def segment_signal(
+    signal: np.ndarray,
+    sampling_rate: float,
+    *,
+    source_format: str = "long",
+    extra: dict | None = None,
 ) -> ParsedBeats:
-    """Detect R-peaks on a long single-lead signal and crop fixed-length beats."""
-    # Flatten — accept either (N,1), (1,N), or (N,).
-    signal = matrix.flatten().astype(np.float64)
+    """Detect R-peaks on a 1-D single-lead signal and crop fixed-length beats.
+
+    Shared by the long-CSV path and the image-digitization path — both reduce
+    to "here is a 1-D signal at a known sampling rate, give me beats".
+    """
+    signal = np.asarray(signal).flatten().astype(np.float64)
     if signal.size < MIN_LONG_SAMPLES:
         raise EcgParseError(
             f"Signal too short for segmentation ({signal.size} samples). "
@@ -163,15 +170,23 @@ def _segment_long(
         )
     stacked = np.stack(beats, axis=0)
     stacked = _normalize_per_beat(stacked)
+    merged = {
+        "signal_length": int(signal.size),
+        "sampling_rate_hz": round(float(sampling_rate), 2),
+        "r_peaks_detected": len(peaks),
+    }
+    if extra:
+        merged.update(extra)
     return ParsedBeats(
         beats=stacked.reshape(-1, BEAT_LEN, 1).astype(np.float32),
-        source_format="long",
-        extra={
-            "signal_length": int(signal.size),
-            "sampling_rate_hz": sampling_rate,
-            "r_peaks_detected": len(peaks),
-        },
+        source_format=source_format,
+        extra=merged,
     )
+
+
+def _segment_long(matrix: np.ndarray, sampling_rate: int) -> ParsedBeats:
+    """Adapter: long-format CSV matrix → 1-D signal → shared segmentation."""
+    return segment_signal(matrix.flatten(), sampling_rate, source_format="long")
 
 
 def parse_csv_upload(
@@ -188,6 +203,34 @@ def parse_csv_upload(
     )
     if parsed.beats.shape[0] > max_beats:
         # Cap so the UI doesn't choke and inference stays snappy.
+        parsed.beats = parsed.beats[:max_beats]
+        parsed.extra["truncated_to"] = max_beats
+    return parsed
+
+
+def parse_image_upload(raw: bytes, max_beats: int = 200) -> ParsedBeats:
+    """Digitize an ECG-strip image into a signal, then segment into beats.
+
+    Imported lazily so the CSV path never pays the Pillow/SciPy import cost.
+    """
+    from app.ecg import image_digitizer as digi  # noqa: WPS433
+
+    try:
+        digitized = digi.digitize_ecg_image(raw)
+    except digi.EcgImageError as e:
+        raise EcgParseError(str(e)) from e
+
+    parsed = segment_signal(
+        digitized.signal,
+        digitized.sampling_rate_hz,
+        source_format="image",
+        extra={
+            "digitization_quality": digitized.quality,
+            "warnings": digitized.warnings,
+            **digitized.meta,
+        },
+    )
+    if parsed.beats.shape[0] > max_beats:
         parsed.beats = parsed.beats[:max_beats]
         parsed.extra["truncated_to"] = max_beats
     return parsed

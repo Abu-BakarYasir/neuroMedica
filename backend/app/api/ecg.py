@@ -1,6 +1,8 @@
 """ECG analysis routes.
 
 POST /api/ecg/analyze        Upload a CSV (wide: one beat per row, or long: raw signal)
+                             OR an image of a single-lead strip (PNG/JPG/…) which is
+                             digitized into a signal before classification.
 POST /api/ecg/analyze-sample Classify a built-in synthetic beat — useful for demos / smoke tests
 """
 
@@ -27,9 +29,45 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/ecg", tags=["ecg"])
 
-# Reject files larger than 5 MB — anything bigger is almost certainly not
-# a single-lead segment we want to handle.
+# Reject CSV files larger than 5 MB — anything bigger is almost certainly not
+# a single-lead segment we want to handle. Images get a larger budget since a
+# decent phone photo can easily exceed 5 MB.
 _MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+_MAX_UPLOAD_IMAGE_BYTES = 15 * 1024 * 1024
+
+# Magic-byte signatures for the raster formats we can digitize. Used as a
+# fallback when the browser doesn't send a reliable content-type.
+_IMAGE_MAGIC: tuple[bytes, ...] = (
+    b"\x89PNG\r\n\x1a\n",  # PNG
+    b"\xff\xd8\xff",  # JPEG
+    b"GIF87a",
+    b"GIF89a",
+    b"BM",  # BMP
+    b"II*\x00",  # TIFF (little-endian)
+    b"MM\x00*",  # TIFF (big-endian)
+)
+
+
+def _looks_like_image(filename: str, content_type: str | None, raw: bytes) -> bool:
+    if content_type and content_type.startswith("image/"):
+        return True
+    lower = (filename or "").lower()
+    if lower.endswith(
+        (".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tif", ".tiff", ".webp")
+    ):
+        return True
+    if raw[:8].startswith(_IMAGE_MAGIC):
+        return True
+    # WEBP: "RIFF....WEBP"
+    return raw[:4] == b"RIFF" and raw[8:12] == b"WEBP"
+
+
+def _is_pdf(filename: str, content_type: str | None, raw: bytes) -> bool:
+    return (
+        raw[:5] == b"%PDF-"
+        or (content_type == "application/pdf")
+        or (filename or "").lower().endswith(".pdf")
+    )
 
 
 def _classes_payload() -> list[ClassInfoOut]:
@@ -97,16 +135,31 @@ async def analyze(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Uploaded file was empty.",
         )
-    if len(raw) > _MAX_UPLOAD_BYTES:
+
+    if _is_pdf(file.filename, file.content_type, raw):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "PDF uploads aren't supported. Export the ECG strip as a PNG/JPG "
+                "image, or upload the signal as a CSV."
+            ),
+        )
+
+    is_image = _looks_like_image(file.filename, file.content_type, raw)
+    max_bytes = _MAX_UPLOAD_IMAGE_BYTES if is_image else _MAX_UPLOAD_BYTES
+    if len(raw) > max_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File too large (max {_MAX_UPLOAD_BYTES // (1024 * 1024)} MB).",
+            detail=f"File too large (max {max_bytes // (1024 * 1024)} MB).",
         )
 
     try:
-        parsed = ecg_parser.parse_csv_upload(
-            raw=raw, sampling_rate_hz=sampling_rate_hz
-        )
+        if is_image:
+            parsed = ecg_parser.parse_image_upload(raw=raw)
+        else:
+            parsed = ecg_parser.parse_csv_upload(
+                raw=raw, sampling_rate_hz=sampling_rate_hz
+            )
     except ecg_parser.EcgParseError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)

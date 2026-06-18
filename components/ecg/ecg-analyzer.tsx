@@ -6,6 +6,7 @@ import { Activity, FileUp, Loader2, Sparkles, AlertCircle, FileText } from "luci
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { analyzeFile, analyzeSample } from "@/lib/ecg/api-client";
+import { validateEcgFile } from "@/lib/ecg/validate";
 import type { BeatClassCode, EcgAnalysisResponse } from "@/lib/ecg/types";
 
 import { BeatCard } from "./beat-card";
@@ -23,6 +24,14 @@ export function EcgAnalyzer() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const runFile = useCallback(async (file: File) => {
+    // Reject images (and other non-signal files) before hitting the backend.
+    const validationError = validateEcgFile(file);
+    if (validationError) {
+      setResult(null);
+      setFileName(file.name);
+      setError(validationError);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     setResult(null);
@@ -110,11 +119,13 @@ export function EcgAnalyzer() {
           <FileUp className="h-5 w-5 text-[#525252]" />
         </div>
         <p className="text-[14px] font-medium text-[#212121] mb-1">
-          Upload an ECG CSV
+          Upload an ECG CSV or an image of a single-lead strip
         </p>
-        <p className="text-[12px] text-[#767676] mb-5 max-w-[480px] mx-auto leading-relaxed">
-          One beat per row (187 columns, matches the Kaggle MIT-BIH layout),
-          or a single-column raw signal — we&apos;ll detect R-peaks and segment it.
+        <p className="text-[12px] text-[#767676] mb-5 max-w-[520px] mx-auto leading-relaxed">
+          CSV: one beat per row (187 columns, Kaggle MIT-BIH layout) or a
+          single-column raw signal. Image: a PNG/JPG photo or scan of a
+          single-lead rhythm strip — we&apos;ll digitize the trace, detect
+          R-peaks, and segment it.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Button
@@ -123,7 +134,7 @@ export function EcgAnalyzer() {
             className="bg-neuro-primary text-white hover:bg-neuro-primary/90"
           >
             <FileText className="h-4 w-4" />
-            Choose CSV
+            Choose CSV or image
           </Button>
           <Button
             onClick={runSample}
@@ -136,7 +147,7 @@ export function EcgAnalyzer() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv,text/csv,text/plain"
+            accept=".csv,text/csv,text/plain,.png,.jpg,.jpeg,.bmp,.gif,.tif,.tiff,.webp,image/*"
             className="hidden"
             onChange={onFileChange}
           />
@@ -166,6 +177,11 @@ export function EcgAnalyzer() {
             <p className="text-[12px] text-rose-700 mt-0.5">{error}</p>
           </div>
         </div>
+      )}
+
+      {/* Digitization confidence (image uploads only) */}
+      {result && !isLoading && result.source_format === "image" && (
+        <DigitizationNotice notes={result.notes} />
       )}
 
       {/* Results */}
@@ -277,5 +293,59 @@ function FilterChip({
     >
       {label}
     </button>
+  );
+}
+
+function DigitizationNotice({ notes }: { notes: Record<string, unknown> }) {
+  const quality =
+    typeof notes.digitization_quality === "number"
+      ? notes.digitization_quality
+      : null;
+  const warnings = Array.isArray(notes.warnings)
+    ? (notes.warnings as string[])
+    : [];
+  const coverage =
+    typeof notes.coverage === "number" ? notes.coverage : null;
+  const lowConfidence = quality !== null && quality < 0.6;
+
+  return (
+    <div
+      className={cn(
+        "mt-6 flex items-start gap-3 rounded-[14px] border p-4",
+        lowConfidence
+          ? "border-amber-200 bg-amber-50"
+          : "border-sky-200 bg-sky-50",
+      )}
+    >
+      <AlertCircle
+        className={cn(
+          "h-4 w-4 mt-0.5 flex-shrink-0",
+          lowConfidence ? "text-amber-600" : "text-sky-600",
+        )}
+      />
+      <div className="min-w-0">
+        <div
+          className={cn(
+            "text-[13px] font-semibold",
+            lowConfidence ? "text-amber-800" : "text-sky-800",
+          )}
+        >
+          Digitized from an image
+          {quality !== null && ` — confidence ${Math.round(quality * 100)}%`}
+        </div>
+        <p className="text-[12px] mt-0.5 text-[#525252]">
+          The waveform was reconstructed from your image
+          {coverage !== null && ` (trace coverage ${Math.round(coverage * 100)}%)`}.
+          Verify the classifications against the original recording.
+        </p>
+        {warnings.length > 0 && (
+          <ul className="mt-2 list-disc pl-4 space-y-0.5 text-[12px] text-[#525252]">
+            {warnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
