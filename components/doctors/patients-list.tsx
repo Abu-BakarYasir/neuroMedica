@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Loader2,
   Search,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/patients/service";
 import type { PatientRow, UnifiedPatient } from "@/lib/patients/types";
 import { PatientFormDialog } from "./patient-form-dialog";
+import { PatientDetailDialog } from "./patient-detail-dialog";
 
 function formatDate(value?: string | null) {
   if (!value) return null;
@@ -32,12 +34,15 @@ function formatDate(value?: string | null) {
 }
 
 export function PatientsList() {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<UnifiedPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  // Seed the search box from the ?q= param so the dashboard search bar lands here.
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<PatientRow | null>(null);
+  const [viewing, setViewing] = useState<UnifiedPatient | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
@@ -158,6 +163,7 @@ export function PatientsList() {
               key={p.source === "manual" ? p.row.id : p.id}
               patient={p}
               delayIndex={idx}
+              onView={() => setViewing(p)}
               onEdit={() =>
                 p.source === "manual" ? setEditing(p.row) : undefined
               }
@@ -172,6 +178,17 @@ export function PatientsList() {
             />
           ))}
         </div>
+      )}
+
+      {/* Read-only detail dialog (click any card) */}
+      {viewing && (
+        <PatientDetailDialog
+          patient={viewing}
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setViewing(null);
+          }}
+        />
       )}
 
       {/* Edit dialog (controlled separately so we can pass the target row) */}
@@ -208,12 +225,14 @@ function StatCard({ label, value }: { label: string; value: number }) {
 function PatientCard({
   patient,
   delayIndex,
+  onView,
   onEdit,
   onDelete,
   isDeleting,
 }: {
   patient: UnifiedPatient;
   delayIndex: number;
+  onView?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   isDeleting?: boolean;
@@ -239,7 +258,18 @@ function PatientCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: Math.min(delayIndex * 0.03, 0.3) }}
     >
-      <Card className="p-4 bg-card border-border flex flex-col h-full">
+      <Card
+        role="button"
+        tabIndex={0}
+        onClick={onView}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onView?.();
+          }
+        }}
+        className="p-4 bg-card border-border flex flex-col h-full cursor-pointer transition-colors hover:border-neuro-primary/40 hover:bg-neuro-primary/[0.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-neuro-primary/40"
+      >
         <div className="flex items-start gap-3 mb-3">
           <div className="h-10 w-10 rounded-full bg-neuro-primary/10 text-neuro-primary flex items-center justify-center font-semibold text-sm shrink-0">
             {initials}
@@ -313,7 +343,10 @@ function PatientCard({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onEdit}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
                 className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
               >
                 <Pencil className="w-3 h-3" />
@@ -324,7 +357,10 @@ function PatientCard({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onDelete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
                 disabled={isDeleting}
                 className="h-7 px-2 text-xs gap-1 text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
               >

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { sendMessageStreaming } from "@/lib/chatbot/api-client";
 import type { Message } from "@/lib/chatbot/types";
 import { ChatMessage } from "@/components/chatbot/chat-message";
+import { AddToReportButton } from "@/components/report-generator/add-to-report-button";
+import { qaToItem } from "@/lib/report/serialize";
 
 interface QaTurn {
   id: string;
@@ -243,7 +245,23 @@ export function MedicalQaViewer() {
                   Searching the literature and grounding the answer…
                 </div>
               ) : (
-                <ChatMessage message={t.answer} />
+                <>
+                  <ChatMessage message={t.answer} />
+                  {t.answer.content && !t.answer.error && (
+                    <div className="flex justify-end px-1 pb-2">
+                      <AddToReportButton
+                        className="h-8"
+                        build={() =>
+                          qaToItem(
+                            t.question.content,
+                            t.answer.content,
+                            t.answer.citations ?? [],
+                          )
+                        }
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ))}

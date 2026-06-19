@@ -152,3 +152,55 @@ create trigger trg_touch_patient_updated_at
   before update on public.patients
   for each row
   execute function public.touch_patient_updated_at();
+
+-- ============================================================
+-- Reports (saved clinical reports — see migration 004)
+-- ============================================================
+
+create table if not exists public.reports (
+  id            uuid primary key default gen_random_uuid(),
+  doctor_id     uuid not null references auth.users(id) on delete cascade,
+  patient_id    uuid references public.patients(id) on delete set null,
+  patient_name  text,
+  title         text not null,
+  notes         text,
+  items         jsonb not null default '[]'::jsonb,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create index if not exists idx_reports_doctor_id  on public.reports(doctor_id);
+create index if not exists idx_reports_created_at on public.reports(created_at desc);
+create index if not exists idx_reports_patient_id on public.reports(patient_id);
+
+alter table public.reports enable row level security;
+
+create policy "Doctors can select own reports"
+  on public.reports for select
+  using (auth.uid() = doctor_id);
+
+create policy "Doctors can insert own reports"
+  on public.reports for insert
+  with check (auth.uid() = doctor_id);
+
+create policy "Doctors can update own reports"
+  on public.reports for update
+  using (auth.uid() = doctor_id)
+  with check (auth.uid() = doctor_id);
+
+create policy "Doctors can delete own reports"
+  on public.reports for delete
+  using (auth.uid() = doctor_id);
+
+create or replace function public.touch_report_updated_at()
+returns trigger as $$
+begin
+  NEW.updated_at = now();
+  return NEW;
+end;
+$$ language plpgsql;
+
+create trigger trg_touch_report_updated_at
+  before update on public.reports
+  for each row
+  execute function public.touch_report_updated_at();

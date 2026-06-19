@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import type {
   PatientInput,
   PatientRow,
+  PrescriptionRow,
   UnifiedPatient,
 } from "./types";
 
@@ -98,6 +99,33 @@ export async function listUnifiedPatients(): Promise<UnifiedPatient[]> {
   }
 
   return result;
+}
+
+/**
+ * Fetch the raw scanned prescriptions for a patient, matched by normalised name.
+ * Used by the read-only patient detail dialog on the Patients page.
+ */
+export async function listPrescriptionsByName(
+  name: string,
+): Promise<PrescriptionRow[]> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("prescriptions")
+    .select("id, patient_name, prescription_date, medications, created_at")
+    .eq("doctor_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  const target = normaliseName(name);
+  return ((data ?? []) as PrescriptionRow[]).filter(
+    (p) => normaliseName(p.patient_name ?? "") === target,
+  );
 }
 
 export async function createPatient(input: PatientInput): Promise<PatientRow> {

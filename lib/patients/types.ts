@@ -24,6 +24,22 @@ export interface PatientInput {
   sex?: PatientSex | null;
 }
 
+/** A single medication line extracted from a scanned prescription. */
+export interface Medication {
+  medicine_name?: string | null;
+  dosage?: string | null;
+  frequency?: string | null;
+}
+
+/** A row from the `prescriptions` table (scanned/OCR'd prescriptions). */
+export interface PrescriptionRow {
+  id: string;
+  patient_name: string | null;
+  prescription_date: string | null;
+  medications: Medication[];
+  created_at: string;
+}
+
 /**
  * A unified "patient" the UI displays.
  * - "manual" rows come from the `patients` table.

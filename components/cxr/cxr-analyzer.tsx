@@ -11,6 +11,8 @@ import type { CxrAnalysisResponse } from "@/lib/cxr/types";
 
 import { FindingsSummary } from "./findings-summary";
 import { FindingRow } from "./finding-row";
+import { AddToReportButton } from "@/components/report-generator/add-to-report-button";
+import { cxrToItem } from "@/lib/report/serialize";
 
 export function CxrAnalyzer() {
   const [result, setResult] = useState<CxrAnalysisResponse | null>(null);
@@ -144,6 +146,13 @@ export function CxrAnalyzer() {
             </div>
             <p className="text-[12px] text-rose-700 mt-0.5">{error}</p>
           </div>
+        </div>
+      )}
+
+      {/* Add to report */}
+      {result && !isLoading && (
+        <div className="mt-6 flex justify-end">
+          <AddToReportButton build={() => cxrToItem(result)} />
         </div>
       )}
 

@@ -21,6 +21,8 @@ import type {
   SymptomExploreResponse,
 } from "@/lib/symptoms/types";
 import type { CitationItem } from "@/lib/chatbot/types";
+import { AddToReportButton } from "@/components/report-generator/add-to-report-button";
+import { symptomToItem } from "@/lib/report/serialize";
 
 const EXAMPLE_SETS: { label: string; symptoms: string[] }[] = [
   { label: "Respiratory", symptoms: ["fever", "productive cough", "pleuritic chest pain"] },
@@ -236,6 +238,10 @@ function Results({
         <span className="text-[11px] text-[#9a9a9a]">
           Differential diagnosis for: {result.symptoms}
         </span>
+        <AddToReportButton
+          build={() => symptomToItem(result)}
+          className="ml-auto h-8"
+        />
       </div>
 
       {result.summary && (

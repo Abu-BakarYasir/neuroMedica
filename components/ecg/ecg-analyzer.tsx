@@ -11,6 +11,8 @@ import type { BeatClassCode, EcgAnalysisResponse } from "@/lib/ecg/types";
 
 import { BeatCard } from "./beat-card";
 import { ResultsSummary } from "./results-summary";
+import { AddToReportButton } from "@/components/report-generator/add-to-report-button";
+import { ecgToItem } from "@/lib/report/serialize";
 
 const ALL_CLASSES: BeatClassCode[] = ["N", "S", "V", "F", "Q"];
 
@@ -182,6 +184,13 @@ export function EcgAnalyzer() {
       {/* Digitization confidence (image uploads only) */}
       {result && !isLoading && result.source_format === "image" && (
         <DigitizationNotice notes={result.notes} />
+      )}
+
+      {/* Add to report */}
+      {result && !isLoading && (
+        <div className="mt-6 flex justify-end">
+          <AddToReportButton build={() => ecgToItem(result)} />
+        </div>
       )}
 
       {/* Results */}
