@@ -6,6 +6,7 @@ import { ClinicalTools } from "@/components/doctors/clinical-tools";
 import { Notifications } from "@/components/doctors/notifications";
 import { MedicalResources } from "@/components/doctors/medical-resources";
 import { doctorWelcomeContent } from "@/lib/doctor-content";
+import { buildDisplayName } from "@/lib/auth/user-display";
 import { Suspense } from "react";
 
 async function DoctorWelcome() {
@@ -16,12 +17,8 @@ async function DoctorWelcome() {
     redirect("/auth/login");
   }
 
-  // Extract name from email or user metadata
-  const userName =
-    data.user.user_metadata?.full_name ||
-    data.user.user_metadata?.name ||
-    data.user.email?.split("@")[0] ||
-    "Doctor";
+  // Prefer the doctor's chosen name; fall back to email only as a last resort.
+  const userName = buildDisplayName(data.user);
 
   return (
     <div className="mb-8">

@@ -31,6 +31,11 @@ interface ChatInputProps {
   disabled?: boolean;
   useRag?: boolean;
   onUseRagChange?: (value: boolean) => void;
+  /**
+   * Text to drop into the composer (e.g. from a suggestion click). The `nonce`
+   * makes repeated picks of the same text re-trigger the fill.
+   */
+  prefill?: { text: string; nonce: number };
 }
 
 export function ChatInput({
@@ -39,6 +44,7 @@ export function ChatInput({
   disabled = false,
   useRag = false,
   onUseRagChange,
+  prefill,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -58,6 +64,24 @@ export function ChatInput({
     el.style.height = "0px";
     el.style.height = Math.min(el.scrollHeight, 200) + "px";
   }, [message]);
+
+  // Populate the composer when a suggestion is picked, then focus so the doctor
+  // can edit before sending (instead of the message being sent immediately).
+  useEffect(() => {
+    if (!prefill) return;
+    setMessage(prefill.text);
+    const el = textareaRef.current;
+    if (el) {
+      el.focus();
+      const len = prefill.text.length;
+      try {
+        el.setSelectionRange(len, len);
+      } catch {
+        /* setSelectionRange can throw on some input types — safe to ignore */
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill?.nonce]);
 
   // Close attach menu when clicking outside
   useEffect(() => {

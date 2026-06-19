@@ -89,7 +89,7 @@ export const clinicalToolsContent = {
       name: "Symptom Explorer",
       description: "Symptom-to-disease mapping with ontologies",
       icon: "Search",
-      href: "/protected/medical-qa",
+      href: "/protected/symptom-explorer",
       color: "from-orange-100 to-orange-50",
     },
     {
@@ -97,7 +97,7 @@ export const clinicalToolsContent = {
       name: "Report Generator",
       description: "Create structured medical reports",
       icon: "FileCheck",
-      href: "/protected/chat",
+      href: "/protected/report-generator",
       color: "from-pink-100 to-pink-50",
     },
   ],

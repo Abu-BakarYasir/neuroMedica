@@ -2,6 +2,8 @@
 
 import { Search } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { buildPatientsSearchHref } from "@/lib/search/patient-search";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -9,14 +11,21 @@ interface SearchBarProps {
 }
 
 export function SearchBar({
-  placeholder = "Search",
+  placeholder = "Search patients",
   onSearch,
 }: SearchBarProps) {
   const [query, setQuery] = useState("");
+  const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch?.(query);
+    if (onSearch) {
+      onSearch(query);
+      return;
+    }
+    // Default behaviour: take the doctor to the Patients page with the query
+    // applied so the search actually returns results.
+    router.push(buildPatientsSearchHref(query));
   };
 
   return (

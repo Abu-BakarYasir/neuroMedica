@@ -1,11 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { notificationsContent } from "@/lib/doctor-content";
-import { AlertCircle, Info, Bell, CheckCircle2 } from "lucide-react";
+import { AlertCircle, Info, Bell, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type NotificationItem = (typeof notificationsContent.notifications)[number];
 
 function NotificationIcon({
   type,
@@ -43,9 +46,22 @@ function PriorityBadge({ priority }: { priority: "high" | "medium" | "low" }) {
 }
 
 export function Notifications() {
-  const unreadCount = notificationsContent.notifications.filter(
-    (n) => n.unread
-  ).length;
+  const [items, setItems] = useState<NotificationItem[]>(
+    () => notificationsContent.notifications.map((n) => ({ ...n }))
+  );
+
+  const unreadCount = items.filter((n) => n.unread).length;
+
+  const markRead = (id: string) =>
+    setItems((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
+    );
+
+  const dismiss = (id: string) =>
+    setItems((prev) => prev.filter((n) => n.id !== id));
+
+  const markAllRead = () =>
+    setItems((prev) => prev.map((n) => ({ ...n, unread: false })));
 
   return (
     <section className="mb-6">
@@ -60,16 +76,35 @@ export function Notifications() {
             </span>
           )}
         </div>
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={markAllRead}
+            className="inline-flex items-center gap-1 text-xs font-medium text-neuro-primary hover:underline"
+          >
+            <Check className="h-3 w-3" />
+            Mark all read
+          </button>
+        )}
       </div>
 
+      {items.length === 0 ? (
+        <Card className="rounded-[20px] border border-[#EDEDED] dark:border-white/10 bg-white dark:bg-[hsl(var(--surface-card))] p-8 text-center text-sm text-[#8D8D8D] dark:text-neutral-400">
+          You&apos;re all caught up — no notifications.
+        </Card>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {notificationsContent.notifications.map((notification, index) => (
+        <AnimatePresence>
+        {items.map((notification, index) => (
           <motion.div
             key={notification.id}
+            layout
             initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: index * 0.1 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+            onClick={() => notification.unread && markRead(notification.id)}
+            className={notification.unread ? "cursor-pointer" : undefined}
           >
             <Card
               className={cn(
@@ -99,9 +134,22 @@ export function Notifications() {
                       <h3 className="text-sm font-semibold text-[#212121] dark:text-neutral-100">
                         {notification.title}
                       </h3>
-                      {notification.unread && (
-                        <div className="w-2 h-2 rounded-full bg-neuro-primary flex-shrink-0 mt-1.5"></div>
-                      )}
+                      <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
+                        {notification.unread && (
+                          <div className="w-2 h-2 rounded-full bg-neuro-primary"></div>
+                        )}
+                        <button
+                          type="button"
+                          aria-label="Dismiss notification"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dismiss(notification.id);
+                          }}
+                          className="text-[#BBBBBB] dark:text-neutral-500 hover:text-[#525252] dark:hover:text-neutral-300 transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <p className="text-sm text-[#525252] dark:text-neutral-300 mb-2 leading-relaxed">
                       {notification.message}
@@ -118,7 +166,9 @@ export function Notifications() {
             </Card>
           </motion.div>
         ))}
+        </AnimatePresence>
       </div>
+      )}
     </section>
   );
 }

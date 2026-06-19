@@ -33,6 +33,16 @@ export function ChatWindow({
   const lastMessageCountRef = useRef(0);
   const lastUserMessageCountRef = useRef(0);
 
+  // Suggestion clicks fill the composer (don't auto-send) so doctors can edit.
+  const [inputPrefill, setInputPrefill] = useState<
+    { text: string; nonce: number } | undefined
+  >(undefined);
+  const prefillNonceRef = useRef(0);
+  const fillInput = (text: string) => {
+    prefillNonceRef.current += 1;
+    setInputPrefill({ text, nonce: prefillNonceRef.current });
+  };
+
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
@@ -103,7 +113,7 @@ export function ChatWindow({
                 {suggestionPrompts.map((prompt) => (
                   <button
                     key={prompt}
-                    onClick={() => onSendMessage(prompt)}
+                    onClick={() => fillInput(prompt)}
                     className="group rounded-xl border border-border bg-card hover:bg-muted/60 hover:border-neuro-primary/40 px-4 py-3 text-sm text-foreground transition-all text-left"
                   >
                     <span className="line-clamp-2">{prompt}</span>
@@ -154,6 +164,7 @@ export function ChatWindow({
               isLoading={isLoading}
               useRag={useRag}
               onUseRagChange={onUseRagChange}
+              prefill={inputPrefill}
             />
           </div>
         </div>

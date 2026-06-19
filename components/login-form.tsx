@@ -6,9 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GoogleIcon } from "@/components/icons/google-icon";
 import { EyeIcon, EyeOffIcon } from "@/components/icons/eye-icon";
+import {
+  getRememberedEmail,
+  setRememberedEmail,
+} from "@/lib/auth/remember-me";
+import { friendlyOAuthError } from "@/lib/auth/oauth-error";
 
 export function LoginForm({
   className,
@@ -22,6 +27,15 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  // Pre-fill the remembered email so users don't re-enter it every time.
+  useEffect(() => {
+    const remembered = getRememberedEmail();
+    if (remembered) {
+      setEmail(remembered);
+      setRememberMe(true);
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const supabase = createClient();
@@ -34,6 +48,7 @@ export function LoginForm({
         password,
       });
       if (error) throw error;
+      setRememberedEmail(email, rememberMe);
       router.push("/protected/doctors");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
@@ -56,7 +71,7 @@ export function LoginForm({
       });
       if (error) throw error;
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(friendlyOAuthError(error, "Google"));
       setIsLoading(false);
     }
   };
@@ -110,11 +125,12 @@ export function LoginForm({
               <div className="flex flex-col gap-4 items-start w-full">
                 <div className="flex flex-col gap-2 items-start w-full">
                   <Input
-                    type="text"
-                    placeholder="Enter your user name"
+                    type="email"
+                    placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    autoComplete="email"
                     className="h-[40px] w-full rounded-[10px] border border-[#EDEDED] dark:border-white/10 bg-white dark:bg-[hsl(var(--surface-elevated))] px-3 text-[13px] font-normal text-[#212121] dark:text-neutral-100 placeholder:text-[#8D8D8D] dark:placeholder:text-neutral-500 shadow-[0px_3px_16px_0px_rgba(30,37,75,0.02),0px_2px_2px_0px_rgba(30,37,75,0.01)] dark:shadow-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E55A2A]"
                   />
                   <div className="relative w-full">

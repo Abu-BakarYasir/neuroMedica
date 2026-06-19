@@ -12,6 +12,9 @@ export function FullPageChat() {
 
   // Queue a message to send after conversation creation
   const pendingMessageRef = useRef<string | null>(null);
+  // Track the previous history-loading state so we can detect the moment a
+  // freshly created conversation finishes its (empty) history load.
+  const prevLoadingHistoryRef = useRef(false);
 
   const handleTitleGenerated = useCallback(
     (id: string, title: string) => {
@@ -25,15 +28,28 @@ export function FullPageChat() {
     onTitleGenerated: handleTitleGenerated,
   });
 
-  // Send pending message once conversationId becomes available
+  // Send the queued first message only AFTER the new conversation's history
+  // has finished loading. Sending earlier races the load effect inside useChat,
+  // whose async resolve would overwrite (and visibly drop) the optimistic
+  // user message and streaming reply.
   useEffect(() => {
-    if (conversations.activeId && pendingMessageRef.current) {
+    const wasLoading = prevLoadingHistoryRef.current;
+    prevLoadingHistoryRef.current = chat.isLoadingHistory;
+
+    // Fire only on the true -> false transition: history has loaded for the new
+    // conversation, so the optimistic message can no longer be clobbered.
+    const historyJustSettled = wasLoading && !chat.isLoadingHistory;
+    if (
+      historyJustSettled &&
+      conversations.activeId &&
+      pendingMessageRef.current
+    ) {
       const msg = pendingMessageRef.current;
       pendingMessageRef.current = null;
       chat.sendMessage(msg);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversations.activeId]);
+  }, [conversations.activeId, chat.isLoadingHistory]);
 
   const handleNewChat = useCallback(async () => {
     await conversations.create();

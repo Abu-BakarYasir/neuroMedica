@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { buildDoctorName } from "@/lib/auth/user-display";
 import {
   mainNavigationItems,
   clinicalToolsSidebarItems,
@@ -50,11 +51,7 @@ export function Sidebar({ className }: { className?: string }) {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        const name =
-          user.user_metadata?.full_name ||
-          user.user_metadata?.name ||
-          `Dr. ${user.email?.split("@")[0] || "User"}`;
-        setUserName(name);
+        setUserName(buildDoctorName(user));
       }
     };
 

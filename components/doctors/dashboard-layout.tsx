@@ -21,8 +21,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         }}
       ></div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 relative z-10 overflow-x-hidden">
+      {/* Content — extra bottom padding so the floating chatbot widget never
+          covers the last interactive element on the page. */}
+      <div className="flex-1 overflow-y-auto p-6 pb-28 relative z-10 overflow-x-hidden">
         {children}
       </div>
     </div>

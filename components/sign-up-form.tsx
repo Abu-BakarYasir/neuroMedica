@@ -9,6 +9,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GoogleIcon } from "@/components/icons/google-icon";
 import { EyeIcon, EyeOffIcon } from "@/components/icons/eye-icon";
+import { joinName } from "@/lib/auth/user-display";
+import { friendlyOAuthError } from "@/lib/auth/oauth-error";
 
 export function SignUpForm({
   className,
@@ -45,6 +47,9 @@ export function SignUpForm({
           data: {
             first_name: firstName,
             last_name: lastName,
+            // Persist a combined display name so the UI shows the doctor's
+            // chosen name instead of defaulting to their email address.
+            full_name: joinName(firstName, lastName),
           },
         },
       });
@@ -71,7 +76,7 @@ export function SignUpForm({
       });
       if (error) throw error;
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(friendlyOAuthError(error, "Google"));
       setIsLoading(false);
     }
   };

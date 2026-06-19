@@ -55,6 +55,7 @@ export function PatientManagement() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
+  const [selectedManual, setSelectedManual] = useState<PatientRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingManualId, setDeletingManualId] = useState<string | null>(null);
   const [addManualOpen, setAddManualOpen] = useState(false);
@@ -539,18 +540,15 @@ export function PatientManagement() {
             <tbody className="divide-y divide-[#EDEDED] dark:divide-white/10">
               {filteredPatients.length > 0 ? (
                 filteredPatients.map((row) => {
-                  const clickable = row.kind === "rx";
                   return (
                     <tr
                       key={`${row.kind}:${row.id}`}
-                      onClick={
-                        clickable ? () => setSelectedPatient(row.raw) : undefined
+                      onClick={() =>
+                        row.kind === "rx"
+                          ? setSelectedPatient(row.raw)
+                          : setSelectedManual(row.raw)
                       }
-                      className={`transition-colors group ${
-                        clickable
-                          ? "hover:bg-blue-50/50 dark:hover:bg-white/5 cursor-pointer"
-                          : "hover:bg-gray-50/50 dark:hover:bg-white/5"
-                      }`}
+                      className="transition-colors group hover:bg-blue-50/50 dark:hover:bg-white/5 cursor-pointer"
                     >
                       <td className="px-5 py-3 font-medium text-gray-900 dark:text-neutral-100">
                         <div className="flex items-center gap-2">
@@ -711,6 +709,66 @@ export function PatientManagement() {
                   </table>
                 </div>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual patient detail dialog */}
+      <Dialog
+        open={!!selectedManual}
+        onOpenChange={(open) => !open && setSelectedManual(null)}
+      >
+        <DialogContent className="sm:max-w-[560px] bg-white dark:bg-[hsl(var(--surface-card))]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 dark:text-neutral-100">
+              <User className="h-5 w-5 text-neuro-primary" />
+              Patient Details
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedManual && (
+            <div className="grid gap-4 py-2">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10">
+                <div>
+                  <Label className="text-[10px] uppercase text-gray-500 dark:text-neutral-400">Full Name</Label>
+                  <p className="font-semibold text-base text-gray-900 dark:text-neutral-100">{selectedManual.name}</p>
+                </div>
+                <div>
+                  <Label className="text-[10px] uppercase text-gray-500 dark:text-neutral-400">Phone</Label>
+                  <p className="font-medium text-sm text-gray-900 dark:text-neutral-100">{selectedManual.phone || "—"}</p>
+                </div>
+                <div>
+                  <Label className="text-[10px] uppercase text-gray-500 dark:text-neutral-400">Date of Birth</Label>
+                  <p className="font-medium text-sm text-gray-900 dark:text-neutral-100">{selectedManual.date_of_birth || "—"}</p>
+                </div>
+                <div>
+                  <Label className="text-[10px] uppercase text-gray-500 dark:text-neutral-400">Sex</Label>
+                  <p className="font-medium text-sm text-gray-900 dark:text-neutral-100 capitalize">
+                    {selectedManual.sex && selectedManual.sex !== "unknown" ? selectedManual.sex : "—"}
+                  </p>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-[10px] uppercase text-gray-500 dark:text-neutral-400">Address</Label>
+                  <p className="font-medium text-sm text-gray-900 dark:text-neutral-100">{selectedManual.address || "—"}</p>
+                </div>
+              </div>
+
+              {selectedManual.notes && (
+                <div>
+                  <Label className="text-sm font-semibold mb-2 flex items-center gap-2 dark:text-neutral-200">
+                    <FileText className="h-4 w-4 text-gray-500 dark:text-neutral-400" />
+                    Notes
+                  </Label>
+                  <p className="text-sm text-gray-600 dark:text-neutral-300 whitespace-pre-wrap">
+                    {selectedManual.notes}
+                  </p>
+                </div>
+              )}
+
+              <p className="text-[11px] text-gray-400 dark:text-neutral-500">
+                Added {new Date(selectedManual.created_at).toLocaleString()}
+              </p>
             </div>
           )}
         </DialogContent>

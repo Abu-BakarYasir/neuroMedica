@@ -16,6 +16,7 @@ import {
   createPatient,
   updatePatient,
 } from "@/lib/patients/service";
+import { validatePhone } from "@/lib/validation/phone";
 import type { PatientInput, PatientRow, PatientSex } from "@/lib/patients/types";
 
 interface PatientFormDialogProps {
@@ -87,6 +88,11 @@ export function PatientFormDialog({
     if (saving) return;
     if (!form.name.trim()) {
       setError("Name is required.");
+      return;
+    }
+    const phoneError = validatePhone(form.phone);
+    if (phoneError) {
+      setError(phoneError);
       return;
     }
     setSaving(true);
@@ -180,6 +186,7 @@ export function PatientFormDialog({
             <Input
               id="patient-phone"
               type="tel"
+              inputMode="tel"
               value={form.phone ?? ""}
               onChange={(e) => update("phone", e.target.value)}
               placeholder="+1 555 123 4567"
