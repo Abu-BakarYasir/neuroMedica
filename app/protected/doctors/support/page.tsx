@@ -1,9 +1,10 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LifeBuoy, Mail, MessageSquare, BookOpen } from "lucide-react";
 
-export default async function SupportPage() {
+async function SupportContent() {
   const supabase = await createClient();
   const {
     data: { session },
@@ -81,5 +82,17 @@ export default async function SupportPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SupportPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full">Loading…</div>
+      }
+    >
+      <SupportContent />
+    </Suspense>
   );
 }

@@ -1,10 +1,11 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { buildDisplayName } from "@/lib/auth/user-display";
 import { Settings as SettingsIcon, KeyRound, User } from "lucide-react";
 
-export default async function SettingsPage() {
+async function SettingsContent() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -75,5 +76,17 @@ export default async function SettingsPage() {
         the sidebar.
       </p>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full">Loading…</div>
+      }
+    >
+      <SettingsContent />
+    </Suspense>
   );
 }

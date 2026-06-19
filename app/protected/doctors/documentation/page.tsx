@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -30,7 +31,7 @@ const SECTIONS = [
   },
 ];
 
-export default async function DocumentationPage() {
+async function DocumentationContent() {
   const supabase = await createClient();
   const {
     data: { session },
@@ -79,5 +80,17 @@ export default async function DocumentationPage() {
         })}
       </div>
     </div>
+  );
+}
+
+export default function DocumentationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full">Loading…</div>
+      }
+    >
+      <DocumentationContent />
+    </Suspense>
   );
 }
