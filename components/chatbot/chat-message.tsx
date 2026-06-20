@@ -254,7 +254,7 @@ function CitationCard({ citation }: { citation: CitationItem }) {
         <div className="mb-1 flex items-center gap-1.5">
           <Badge
             variant="outline"
-            className="text-[10px] uppercase tracking-wide border-neuro-primary/40 text-neuro-primary bg-white font-semibold gap-1"
+            className="text-[10px] uppercase tracking-wide border-neuro-primary/40 text-neuro-primary bg-card font-semibold gap-1"
           >
             <SourceIcon className="w-3 h-3" />
             {meta.label}
@@ -399,16 +399,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
                 <CitationCard key={`${c.pmid}-${c.index}`} citation={c} />
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Disclaimer */}
-        {message.usedRag && message.disclaimer && (
-          <div className="mt-3 pt-2.5 border-t border-border">
-            <p className="text-[11px] text-muted-foreground leading-snug flex items-start gap-1.5">
-              <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
-              {message.disclaimer}
-            </p>
           </div>
         )}
 

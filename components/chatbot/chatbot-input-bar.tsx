@@ -62,7 +62,7 @@ export function ChatbotInputBar({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-2px_8px_rgba(0,0,0,0.1)]">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.1)]">
       <div className="max-w-7xl mx-auto px-4 py-3">
         <form onSubmit={handleSend} className="flex items-center gap-3">
           {/* Avatar */}
@@ -79,10 +79,10 @@ export function ChatbotInputBar({
           {/* Name and Input Container */}
           <div className="flex-1 flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-gray-900 truncate">
+              <span className="text-sm font-semibold text-foreground truncate">
                 {userName}
               </span>
-              <span className="flex-shrink-0 text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">
+              <span className="flex-shrink-0 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">
                 AI
               </span>
             </div>
@@ -92,7 +92,7 @@ export function ChatbotInputBar({
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               disabled={disabled}
-              className="border-0 bg-transparent px-0 py-0.5 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-400 font-normal"
+              className="border-0 bg-transparent px-0 py-0.5 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground font-normal"
             />
           </div>
 
@@ -100,21 +100,21 @@ export function ChatbotInputBar({
           <button
             type="button"
             onClick={onExpand}
-            className="flex-shrink-0 w-9 h-9 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+            className="flex-shrink-0 w-9 h-9 flex items-center justify-center hover:bg-muted rounded-full transition-colors"
             aria-label={isExpanded ? "Collapse chat" : "Expand chat"}
           >
             {isExpanded ? (
-              <ChevronDown className="w-5 h-5 text-gray-600" />
+              <ChevronDown className="w-5 h-5 text-muted-foreground" />
             ) : (
-              <ChevronUp className="w-5 h-5 text-gray-600" />
+              <ChevronUp className="w-5 h-5 text-muted-foreground" />
             )}
           </button>
         </form>
 
         {/* Cost Counter */}
         <div className="mt-2 ml-[52px]">
-          <div className="bg-gray-100 rounded-md px-2.5 py-1 inline-block">
-            <span className="text-xs text-gray-600 font-medium">
+          <div className="bg-muted rounded-md px-2.5 py-1 inline-block">
+            <span className="text-xs text-muted-foreground font-medium">
               {cost.toFixed(2)}
             </span>
           </div>

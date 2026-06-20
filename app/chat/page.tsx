@@ -3,7 +3,7 @@ import { Suspense } from "react";
   
   function ChatLoadingFallback() {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 text-gray-600 text-sm">
+      <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground text-sm">
         Loading chat…
       </div>
     );
