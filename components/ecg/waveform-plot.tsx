@@ -56,7 +56,7 @@ export function WaveformPlot({
         x2={width - padX}
         y1={height / 2}
         y2={height / 2}
-        stroke="#F1F1F1"
+        stroke="hsl(var(--border))"
         strokeWidth={1}
       />
       <polyline

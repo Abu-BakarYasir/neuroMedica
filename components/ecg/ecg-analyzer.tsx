@@ -92,10 +92,10 @@ export function EcgAnalyzer() {
           <Activity className="h-5 w-5 text-neuro-primary" />
         </div>
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-[#212121]">
+          <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
             ECG Signal Analysis
           </h1>
-          <p className="text-[13px] text-[#525252] mt-0.5">
+          <p className="text-[13px] text-muted-foreground mt-0.5">
             Heartbeat classification into AAMI EC57 classes — Normal, Supraventricular
             ectopic, Ventricular ectopic, Fusion, and Unknown/Paced.
           </p>
@@ -111,19 +111,19 @@ export function EcgAnalyzer() {
         onDragLeave={() => setIsDragging(false)}
         onDrop={onDrop}
         className={cn(
-          "rounded-[16px] border-2 border-dashed bg-white p-8 text-center transition-colors",
+          "rounded-[16px] border-2 border-dashed bg-card p-8 text-center transition-colors",
           isDragging
             ? "border-neuro-primary bg-neuro-primary/5"
-            : "border-[#E5E5E5]",
+            : "border-border",
         )}
       >
-        <div className="mx-auto w-12 h-12 rounded-full bg-[#FAFAFA] flex items-center justify-center mb-4">
-          <FileUp className="h-5 w-5 text-[#525252]" />
+        <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+          <FileUp className="h-5 w-5 text-muted-foreground" />
         </div>
-        <p className="text-[14px] font-medium text-[#212121] mb-1">
+        <p className="text-[14px] font-medium text-foreground mb-1">
           Upload an ECG CSV or an image of a single-lead strip
         </p>
-        <p className="text-[12px] text-[#767676] mb-5 max-w-[520px] mx-auto leading-relaxed">
+        <p className="text-[12px] text-muted-foreground mb-5 max-w-[520px] mx-auto leading-relaxed">
           CSV: one beat per row (187 columns, Kaggle MIT-BIH layout) or a
           single-column raw signal. Image: a PNG/JPG photo or scan of a
           single-lead rhythm strip — we&apos;ll digitize the trace, detect
@@ -155,13 +155,13 @@ export function EcgAnalyzer() {
           />
         </div>
         {fileName && !isLoading && (
-          <p className="text-[11px] text-[#838383] mt-4">Loaded: {fileName}</p>
+          <p className="text-[11px] text-muted-foreground mt-4">Loaded: {fileName}</p>
         )}
       </div>
 
       {/* Loading state */}
       {isLoading && (
-        <div className="mt-6 flex items-center justify-center gap-3 rounded-[14px] border border-[#EDEDED] bg-white p-6 text-[13px] text-[#525252]">
+        <div className="mt-6 flex items-center justify-center gap-3 rounded-[14px] border border-border bg-card p-6 text-[13px] text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin text-neuro-primary" />
           Analyzing heartbeats — this may take a few seconds on the first request
           while the model warms up.
@@ -170,13 +170,13 @@ export function EcgAnalyzer() {
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="mt-6 flex items-start gap-3 rounded-[14px] border border-rose-200 bg-rose-50 p-4">
-          <AlertCircle className="h-4 w-4 text-rose-600 mt-0.5 flex-shrink-0" />
+        <div className="mt-6 flex items-start gap-3 rounded-[14px] border border-rose-200 bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/40 p-4">
+          <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 mt-0.5 flex-shrink-0" />
           <div>
-            <div className="text-[13px] font-semibold text-rose-800">
+            <div className="text-[13px] font-semibold text-rose-800 dark:text-rose-300">
               Could not analyze this ECG
             </div>
-            <p className="text-[12px] text-rose-700 mt-0.5">{error}</p>
+            <p className="text-[12px] text-rose-700 dark:text-rose-300 mt-0.5">{error}</p>
           </div>
         </div>
       )}
@@ -203,21 +203,21 @@ export function EcgAnalyzer() {
             />
 
             {result.notes && Object.keys(result.notes).length > 0 && (
-              <div className="mt-3 rounded-[12px] border border-[#EDEDED] bg-white p-4 text-[11px] text-[#525252]">
-                <div className="text-[10px] uppercase tracking-wide text-[#838383] mb-2">
+              <div className="mt-3 rounded-[12px] border border-border bg-card p-4 text-[11px] text-muted-foreground">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-2">
                   Source
                 </div>
                 <div className="space-y-1">
                   <div>
                     Format:{" "}
-                    <span className="font-medium text-[#212121]">
+                    <span className="font-medium text-foreground">
                       {result.source_format}
                     </span>
                   </div>
                   {Object.entries(result.notes).map(([k, v]) => (
                     <div key={k}>
                       {k}:{" "}
-                      <span className="font-medium text-[#212121]">
+                      <span className="font-medium text-foreground">
                         {String(v)}
                       </span>
                     </div>
@@ -226,17 +226,14 @@ export function EcgAnalyzer() {
               </div>
             )}
 
-            <p className="mt-3 text-[10px] leading-relaxed text-[#838383]">
-              {result.disclaimer}
-            </p>
           </div>
 
           <div className="min-w-0">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-[13px] font-semibold text-[#212121]">
+              <div className="text-[13px] font-semibold text-foreground">
                 Per-beat classifications
               </div>
-              <div className="text-[11px] text-[#767676]">
+              <div className="text-[11px] text-muted-foreground">
                 {filteredBeats?.length ?? 0} of {result.beats.length}
               </div>
             </div>
@@ -269,7 +266,7 @@ export function EcgAnalyzer() {
             </div>
 
             {filteredBeats?.length === 0 && (
-              <div className="rounded-[14px] border border-[#EDEDED] bg-white p-8 text-center text-[13px] text-[#767676]">
+              <div className="rounded-[14px] border border-border bg-card p-8 text-center text-[13px] text-muted-foreground">
                 No beats match this filter.
               </div>
             )}
@@ -297,7 +294,7 @@ function FilterChip({
         "px-3 py-1 rounded-full text-[11px] font-medium border transition-colors",
         active
           ? "bg-neuro-primary text-white border-neuro-primary"
-          : "bg-white text-[#525252] border-[#E5E5E5] hover:border-neuro-primary/40",
+          : "bg-card text-muted-foreground border-border hover:border-neuro-primary/40",
       )}
     >
       {label}
@@ -322,33 +319,33 @@ function DigitizationNotice({ notes }: { notes: Record<string, unknown> }) {
       className={cn(
         "mt-6 flex items-start gap-3 rounded-[14px] border p-4",
         lowConfidence
-          ? "border-amber-200 bg-amber-50"
-          : "border-sky-200 bg-sky-50",
+          ? "border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/40"
+          : "border-sky-200 bg-sky-50 dark:border-sky-900/50 dark:bg-sky-950/40",
       )}
     >
       <AlertCircle
         className={cn(
           "h-4 w-4 mt-0.5 flex-shrink-0",
-          lowConfidence ? "text-amber-600" : "text-sky-600",
+          lowConfidence ? "text-amber-600 dark:text-amber-400" : "text-sky-600 dark:text-sky-400",
         )}
       />
       <div className="min-w-0">
         <div
           className={cn(
             "text-[13px] font-semibold",
-            lowConfidence ? "text-amber-800" : "text-sky-800",
+            lowConfidence ? "text-amber-800 dark:text-amber-300" : "text-sky-800 dark:text-sky-300",
           )}
         >
           Digitized from an image
           {quality !== null && ` — confidence ${Math.round(quality * 100)}%`}
         </div>
-        <p className="text-[12px] mt-0.5 text-[#525252]">
+        <p className="text-[12px] mt-0.5 text-muted-foreground">
           The waveform was reconstructed from your image
           {coverage !== null && ` (trace coverage ${Math.round(coverage * 100)}%)`}.
           Verify the classifications against the original recording.
         </p>
         {warnings.length > 0 && (
-          <ul className="mt-2 list-disc pl-4 space-y-0.5 text-[12px] text-[#525252]">
+          <ul className="mt-2 list-disc pl-4 space-y-0.5 text-[12px] text-muted-foreground">
             {warnings.map((w, i) => (
               <li key={i}>{w}</li>
             ))}
