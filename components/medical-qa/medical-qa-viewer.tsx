@@ -143,8 +143,8 @@ export function MedicalQaViewer() {
           <BookOpen className="h-5 w-5 text-neuro-primary" />
         </div>
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-[#212121]">Medical Q&amp;A</h1>
-          <p className="text-[13px] text-[#525252] mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Medical Q&amp;A</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">
             Reference-grounded answers with citations from biomedical literature,
             FDA labels, RxNorm, and clinical guidelines.
           </p>
@@ -152,7 +152,7 @@ export function MedicalQaViewer() {
       </div>
 
       {/* Question box */}
-      <div className="rounded-[16px] border border-[#E5E5E5] bg-white p-3 shadow-sm">
+      <div className="rounded-[16px] border border-border bg-card p-3 shadow-sm">
         <textarea
           ref={textareaRef}
           value={input}
@@ -160,12 +160,12 @@ export function MedicalQaViewer() {
           onKeyDown={onKeyDown}
           rows={3}
           placeholder="Ask a clinical question — e.g. “What is the first-line treatment for type 2 diabetes?”"
-          className="w-full resize-none bg-transparent px-2 py-1.5 text-[14px] text-[#212121] placeholder:text-[#9a9a9a] focus:outline-none"
+          className="w-full resize-none bg-transparent px-2 py-1.5 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
           disabled={isStreaming}
         />
         <div className="flex items-center justify-between gap-2 pt-1">
-          <span className="text-[11px] text-[#9a9a9a]">
-            Evidence-grounded · educational use only
+          <span className="text-[11px] text-muted-foreground">
+            Evidence-grounded with citations
           </span>
           <div className="flex items-center gap-2">
             {turns.length > 0 && (
@@ -174,7 +174,7 @@ export function MedicalQaViewer() {
                 variant="ghost"
                 onClick={clearSession}
                 disabled={isStreaming}
-                className="text-[#767676]"
+                className="text-muted-foreground"
               >
                 <Trash2 className="h-4 w-4" />
                 Clear
@@ -200,7 +200,7 @@ export function MedicalQaViewer() {
       {/* Example questions (empty state only) */}
       {turns.length === 0 && (
         <div className="mt-6">
-          <div className="flex items-center gap-2 text-[12px] text-[#767676] mb-3">
+          <div className="flex items-center gap-2 text-[12px] text-muted-foreground mb-3">
             <Sparkles className="h-3.5 w-3.5 text-neuro-primary" />
             Try one of these
           </div>
@@ -211,7 +211,7 @@ export function MedicalQaViewer() {
                 type="button"
                 onClick={() => void ask(q)}
                 disabled={isStreaming}
-                className="text-left rounded-[12px] border border-[#E5E5E5] bg-white px-4 py-3 text-[13px] text-[#374151] hover:border-neuro-primary/40 hover:bg-neuro-primary/5 transition-colors disabled:opacity-60"
+                className="text-left rounded-[12px] border border-border bg-card px-4 py-3 text-[13px] text-foreground hover:border-neuro-primary/40 hover:bg-neuro-primary/5 transition-colors disabled:opacity-60"
               >
                 {q}
               </button>
@@ -222,25 +222,25 @@ export function MedicalQaViewer() {
 
       {/* Error banner */}
       {error && (
-        <div className="mt-6 flex items-start gap-3 rounded-[14px] border border-rose-200 bg-rose-50 p-4">
-          <AlertCircle className="h-4 w-4 text-rose-600 mt-0.5 flex-shrink-0" />
+        <div className="mt-6 flex items-start gap-3 rounded-[14px] border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/50 dark:bg-rose-950/40">
+          <AlertCircle className="h-4 w-4 text-rose-600 mt-0.5 flex-shrink-0 dark:text-rose-400" />
           <div>
-            <div className="text-[13px] font-semibold text-rose-800">
+            <div className="text-[13px] font-semibold text-rose-800 dark:text-rose-300">
               Could not answer this question
             </div>
-            <p className="text-[12px] text-rose-700 mt-0.5">{error}</p>
+            <p className="text-[12px] text-rose-700 mt-0.5 dark:text-rose-300">{error}</p>
           </div>
         </div>
       )}
 
       {/* Q&A feed (newest first) */}
       {orderedTurns.length > 0 && (
-        <div className="mt-6 divide-y divide-[#F0F0F0]">
+        <div className="mt-6 divide-y divide-border">
           {orderedTurns.map((t) => (
             <div key={t.id} className="py-1">
               <ChatMessage message={t.question} />
               {awaitingFirstToken && t.id === turns[turns.length - 1].id ? (
-                <div className="flex items-center gap-3 px-1 py-4 text-[13px] text-[#525252]">
+                <div className="flex items-center gap-3 px-1 py-4 text-[13px] text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin text-neuro-primary" />
                   Searching the literature and grounding the answer…
                 </div>

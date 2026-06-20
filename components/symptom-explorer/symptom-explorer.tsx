@@ -32,9 +32,9 @@ const EXAMPLE_SETS: { label: string; symptoms: string[] }[] = [
 ];
 
 const LIKELIHOOD_STYLE: Record<Likelihood, string> = {
-  high: "bg-rose-100 text-rose-700 border-rose-200",
-  moderate: "bg-amber-100 text-amber-700 border-amber-200",
-  low: "bg-neutral-100 text-neutral-600 border-neutral-200",
+  high: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-900/50",
+  moderate: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-900/50",
+  low: "bg-muted text-muted-foreground border-border",
 };
 
 export function SymptomExplorer() {
@@ -109,18 +109,18 @@ export function SymptomExplorer() {
           <Stethoscope className="h-5 w-5 text-neuro-primary" />
         </div>
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-[#212121]">
+          <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
             Symptom Explorer
           </h1>
-          <p className="text-[13px] text-[#525252] mt-0.5">
+          <p className="text-[13px] text-muted-foreground mt-0.5">
             Enter presenting symptoms to get an evidence-grounded differential
-            diagnosis with citations. Educational use only — not a diagnosis.
+            diagnosis with citations.
           </p>
         </div>
       </div>
 
       {/* Input */}
-      <div className="rounded-[16px] border border-[#E5E5E5] bg-white p-3 shadow-sm">
+      <div className="rounded-[16px] border border-border bg-card p-3 shadow-sm">
         <div className="flex flex-wrap items-center gap-1.5 px-1 py-1">
           {symptoms.map((s) => (
             <span
@@ -146,12 +146,12 @@ export function SymptomExplorer() {
             onBlur={addDraft}
             placeholder={symptoms.length ? "Add another symptom…" : "Type a symptom and press Enter (or use commas)…"}
             disabled={isLoading}
-            className="flex-1 min-w-[180px] bg-transparent px-2 py-1.5 text-[14px] text-[#212121] placeholder:text-[#9a9a9a] focus:outline-none"
+            className="flex-1 min-w-[180px] bg-transparent px-2 py-1.5 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
         </div>
-        <div className="flex items-center justify-between gap-2 border-t border-[#F0F0F0] pt-2 mt-1">
-          <span className="text-[11px] text-[#9a9a9a]">
-            Evidence-grounded · codes are AI-suggested · educational use only
+        <div className="flex items-center justify-between gap-2 border-t border-border pt-2 mt-1">
+          <span className="text-[11px] text-muted-foreground">
+            Evidence-grounded with citations
           </span>
           <Button
             type="button"
@@ -172,17 +172,17 @@ export function SymptomExplorer() {
       {/* Example sets (empty state) */}
       {!result && !isLoading && (
         <div className="mt-6">
-          <div className="text-[12px] text-[#767676] mb-3">Try a preset</div>
+          <div className="text-[12px] text-muted-foreground mb-3">Try a preset</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {EXAMPLE_SETS.map((ex) => (
               <button
                 key={ex.label}
                 type="button"
                 onClick={() => applyExample(ex.symptoms)}
-                className="text-left rounded-[12px] border border-[#E5E5E5] bg-white px-4 py-3 hover:border-neuro-primary/40 hover:bg-neuro-primary/5 transition-colors"
+                className="text-left rounded-[12px] border border-border bg-card px-4 py-3 hover:border-neuro-primary/40 hover:bg-neuro-primary/5 transition-colors"
               >
-                <div className="text-[13px] font-medium text-[#212121]">{ex.label}</div>
-                <div className="text-[12px] text-[#767676] mt-0.5">
+                <div className="text-[13px] font-medium text-foreground">{ex.label}</div>
+                <div className="text-[12px] text-muted-foreground mt-0.5">
                   {ex.symptoms.join(", ")}
                 </div>
               </button>
@@ -193,7 +193,7 @@ export function SymptomExplorer() {
 
       {/* Loading */}
       {isLoading && (
-        <div className="mt-6 flex items-center gap-3 rounded-[14px] border border-[#EDEDED] bg-white p-6 text-[13px] text-[#525252]">
+        <div className="mt-6 flex items-center gap-3 rounded-[14px] border border-border bg-card p-6 text-[13px] text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin text-neuro-primary" />
           Analyzing symptoms against the literature — this may take a moment.
         </div>
@@ -201,13 +201,13 @@ export function SymptomExplorer() {
 
       {/* Error */}
       {error && !isLoading && (
-        <div className="mt-6 flex items-start gap-3 rounded-[14px] border border-rose-200 bg-rose-50 p-4">
-          <AlertCircle className="h-4 w-4 text-rose-600 mt-0.5 flex-shrink-0" />
+        <div className="mt-6 flex items-start gap-3 rounded-[14px] border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/50 dark:bg-rose-950/40">
+          <AlertCircle className="h-4 w-4 text-rose-600 mt-0.5 flex-shrink-0 dark:text-rose-400" />
           <div>
-            <div className="text-[13px] font-semibold text-rose-800">
+            <div className="text-[13px] font-semibold text-rose-800 dark:text-rose-300">
               Could not analyze these symptoms
             </div>
-            <p className="text-[12px] text-rose-700 mt-0.5">{error}</p>
+            <p className="text-[12px] text-rose-700 mt-0.5 dark:text-rose-300">{error}</p>
           </div>
         </div>
       )}
@@ -235,7 +235,7 @@ function Results({
         <span className="text-[10px] uppercase tracking-wide font-semibold rounded-full border border-neuro-primary/40 text-neuro-primary bg-neuro-primary/5 px-2 py-0.5">
           {confidence} confidence
         </span>
-        <span className="text-[11px] text-[#9a9a9a]">
+        <span className="text-[11px] text-muted-foreground">
           Differential diagnosis for: {result.symptoms}
         </span>
         <AddToReportButton
@@ -245,12 +245,12 @@ function Results({
       </div>
 
       {result.summary && (
-        <p className="text-[13px] text-[#374151] leading-relaxed">{result.summary}</p>
+        <p className="text-[13px] text-foreground leading-relaxed">{result.summary}</p>
       )}
 
       {/* Prose fallback (model didn't return structured JSON) */}
       {!result.structured && (
-        <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800">
+        <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
           Showing a narrative summary — a structured differential wasn&apos;t available
           for this query.
         </div>
@@ -270,7 +270,7 @@ function Results({
       )}
 
       {result.structured && result.differentials.length === 0 && (
-        <div className="rounded-[14px] border border-[#EDEDED] bg-white p-6 text-center text-[13px] text-[#767676]">
+        <div className="rounded-[14px] border border-border bg-card p-6 text-center text-[13px] text-muted-foreground">
           No differential could be grounded in the available evidence. Try adding
           more specific symptoms.
         </div>
@@ -278,11 +278,11 @@ function Results({
 
       {/* Recommended workup */}
       {result.recommended_workup.length > 0 && (
-        <div className="rounded-[14px] border border-[#EDEDED] bg-white p-4">
-          <div className="text-[13px] font-semibold text-[#212121] mb-2">
+        <div className="rounded-[14px] border border-border bg-card p-4">
+          <div className="text-[13px] font-semibold text-foreground mb-2">
             Recommended workup
           </div>
-          <ul className="list-disc pl-5 space-y-1 text-[13px] text-[#374151]">
+          <ul className="list-disc pl-5 space-y-1 text-[13px] text-foreground">
             {result.recommended_workup.map((w, i) => (
               <li key={i}>{w}</li>
             ))}
@@ -292,8 +292,8 @@ function Results({
 
       {/* Sources */}
       {result.citations.length > 0 && (
-        <div className="rounded-[14px] border border-[#EDEDED] bg-white p-4">
-          <div className="text-[13px] font-semibold text-[#212121] mb-3">
+        <div className="rounded-[14px] border border-border bg-card p-4">
+          <div className="text-[13px] font-semibold text-foreground mb-3">
             Sources ({result.citations.length})
           </div>
           <div className="space-y-2">
@@ -304,7 +304,6 @@ function Results({
         </div>
       )}
 
-      <p className="text-[10px] leading-relaxed text-[#838383]">{result.disclaimer}</p>
     </div>
   );
 }
@@ -317,9 +316,9 @@ function DifferentialCard({
   citationsByIndex: Map<number, CitationItem>;
 }) {
   return (
-    <div className="rounded-[14px] border border-[#EDEDED] bg-white p-4">
+    <div className="rounded-[14px] border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-[15px] font-semibold text-[#212121]">{d.condition}</h3>
+        <h3 className="text-[15px] font-semibold text-foreground">{d.condition}</h3>
         <span
           className={cn(
             "text-[10px] uppercase tracking-wide font-semibold rounded-full border px-2 py-0.5 flex-shrink-0",
@@ -330,32 +329,29 @@ function DifferentialCard({
         </span>
       </div>
 
-      {/* AI-suggested codes */}
+      {/* Clinical codes */}
       {(d.icd10 || d.snomed) && (
         <div className="flex flex-wrap items-center gap-1.5 mt-2">
           {d.icd10 && <CodeChip label="ICD-10" value={d.icd10} />}
           {d.snomed && <CodeChip label="SNOMED" value={d.snomed} />}
-          <span className="text-[10px] text-[#9a9a9a]" title="Codes are AI-suggested from general knowledge and may be inaccurate — verify against an authoritative source.">
-            AI-suggested · verify
-          </span>
         </div>
       )}
 
       {d.rationale && (
-        <p className="text-[13px] text-[#374151] leading-relaxed mt-2.5">{d.rationale}</p>
+        <p className="text-[13px] text-foreground leading-relaxed mt-2.5">{d.rationale}</p>
       )}
 
       {d.red_flags && (
-        <div className="mt-2.5 flex items-start gap-2 rounded-[10px] bg-rose-50 border border-rose-200 px-3 py-2">
-          <AlertTriangle className="h-3.5 w-3.5 text-rose-600 mt-0.5 flex-shrink-0" />
-          <span className="text-[12px] text-rose-800">{d.red_flags}</span>
+        <div className="mt-2.5 flex items-start gap-2 rounded-[10px] bg-rose-50 border border-rose-200 px-3 py-2 dark:bg-rose-950/40 dark:border-rose-900/50">
+          <AlertTriangle className="h-3.5 w-3.5 text-rose-600 mt-0.5 flex-shrink-0 dark:text-rose-400" />
+          <span className="text-[12px] text-rose-800 dark:text-rose-300">{d.red_flags}</span>
         </div>
       )}
 
       {/* Supporting sources */}
       {d.supporting_citations.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mt-3">
-          <span className="text-[11px] text-[#9a9a9a]">Sources:</span>
+          <span className="text-[11px] text-muted-foreground">Sources:</span>
           {d.supporting_citations.map((idx) => {
             const c = citationsByIndex.get(idx);
             const href = c?.url;
@@ -372,7 +368,7 @@ function DifferentialCard({
                 <ExternalLink className="h-2.5 w-2.5" />
               </a>
             ) : (
-              <span key={idx} className="text-[11px] text-[#767676]">
+              <span key={idx} className="text-[11px] text-muted-foreground">
                 [{idx}]
               </span>
             );
@@ -385,9 +381,9 @@ function DifferentialCard({
 
 function CodeChip({ label, value }: { label: string; value: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-md border border-[#E5E5E5] bg-[#FAFAFA] px-2 py-0.5 text-[11px]">
-      <span className="text-[#9a9a9a]">{label}</span>
-      <span className="font-medium text-[#212121]">{value}</span>
+    <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-2 py-0.5 text-[11px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium text-foreground">{value}</span>
     </span>
   );
 }
@@ -396,13 +392,13 @@ function SourceRow({ c }: { c: CitationItem }) {
   const label = (c.source_type ?? "pubmed").toUpperCase();
   return (
     <div className="flex items-start gap-2 text-[12px]">
-      <span className="text-[#9a9a9a] flex-shrink-0">{c.index}.</span>
+      <span className="text-muted-foreground flex-shrink-0">{c.index}.</span>
       <div className="min-w-0">
-        <span className="inline-block text-[9px] uppercase tracking-wide font-semibold text-[#767676] bg-[#F2F2F2] rounded px-1.5 py-0.5 mr-1.5 align-middle">
+        <span className="inline-block text-[9px] uppercase tracking-wide font-semibold text-muted-foreground bg-muted rounded px-1.5 py-0.5 mr-1.5 align-middle">
           {label}
         </span>
-        <span className="text-[#212121]">{c.title || c.pmid}</span>
-        {c.journal && <span className="text-[#9a9a9a]"> · {c.journal}</span>}
+        <span className="text-foreground">{c.title || c.pmid}</span>
+        {c.journal && <span className="text-muted-foreground"> · {c.journal}</span>}
         {c.url && (
           <a
             href={c.url}
