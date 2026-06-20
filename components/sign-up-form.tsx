@@ -11,6 +11,7 @@ import { GoogleIcon } from "@/components/icons/google-icon";
 import { EyeIcon, EyeOffIcon } from "@/components/icons/eye-icon";
 import { joinName } from "@/lib/auth/user-display";
 import { friendlyOAuthError } from "@/lib/auth/oauth-error";
+import { NeuroMedicaMark } from "@/components/neuromedica-logo";
 
 export function SignUpForm({
   className,
@@ -92,8 +93,9 @@ export function SignUpForm({
       <div className="flex flex-col gap-[32px] items-center w-full">
         {/* Header */}
         <div className="flex flex-col gap-3 items-center text-center">
+          <NeuroMedicaMark size={48} className="mb-1" />
           <h1 className="text-2xl font-semibold text-[#212121] dark:text-neutral-100 leading-tight tracking-[0.24px]">
-            Welcome to Neuro Medica
+            Welcome to NeuroMedica
           </h1>
           <p className="text-sm font-normal text-[#6B6C6E] dark:text-neutral-400 leading-[1.15]">
             Enter your credentials to access your account.
@@ -222,7 +224,7 @@ export function SignUpForm({
 
             {/* Footer */}
             <p className="text-[13px] font-normal text-[#BBBBBB] dark:text-neutral-500 text-center leading-[1.15] w-full">
-              Crafted with ❤️ by Neuro Medica
+              Crafted with ❤️ by NeuroMedica
             </p>
           </div>
         </form>

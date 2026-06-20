@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { footerContent } from "@/lib/landing-content";
+import { NeuroMedicaLogo } from "@/components/neuromedica-logo";
 
 export function Footer() {
   return (
@@ -10,7 +11,7 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
           <div className="space-y-4 md:col-span-1">
-            <h3 className="text-lg font-semibold text-[#212121]">Neuro Medica</h3>
+            <NeuroMedicaLogo size={30} textSize="text-lg" />
             <p className="text-sm text-[#8D8D8D] leading-relaxed">
               Explainable AI for Medical Education
             </p>

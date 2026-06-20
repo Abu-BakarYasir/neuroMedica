@@ -9,8 +9,9 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Neuro Medica - Healthcare Management Platform",
-  description: "Neuro Medica - Healthcare Management Platform",
+  title: "NeuroMedica — AI-Powered Medical Imaging & Knowledge Assistant",
+  description:
+    "NeuroMedica — an AI-powered medical imaging and knowledge assistant for explainable, reference-grounded clinical decision support.",
 };
 
 const inter = Inter({

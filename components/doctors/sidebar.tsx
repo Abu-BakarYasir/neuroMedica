@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { buildDoctorName } from "@/lib/auth/user-display";
+import { NeuroMedicaMark, NeuroMedicaLogo } from "@/components/neuromedica-logo";
 import {
   mainNavigationItems,
   clinicalToolsSidebarItems,
@@ -151,10 +152,10 @@ export function Sidebar({ className }: { className?: string }) {
     >
       {/* Logo Header Section - Fixed at top */}
       <div className="flex items-center justify-between mb-[29px] flex-shrink-0 gap-2">
-        {!isCollapsed && (
-          <span className="text-xl font-semibold text-[#212121] dark:text-white">
-            Neuro medica
-          </span>
+        {!isCollapsed ? (
+          <NeuroMedicaLogo size={30} textSize="text-lg" />
+        ) : (
+          <NeuroMedicaMark size={30} />
         )}
         <div className={cn("flex items-center gap-1", isCollapsed && "flex-col-reverse")}>
           {/* Theme toggle */}

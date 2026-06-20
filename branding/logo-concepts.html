@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NeuroMedica — Logo Concepts</title>
+<style>
+  :root{
+    --c1:#FFA8C8; --c2:#F58947; --c3:#F47325; --c4:#FF4F34;
+    --primary:#E55A2A; --dark:#A03A15; --ink:#212121; --muted:#6b7280;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--ink);background:#fafafa}
+  header{padding:40px 32px 24px;text-align:center;border-bottom:1px solid #ededed;background:#fff}
+  header h1{margin:0 0 6px;font-size:26px;font-weight:700}
+  header p{margin:0;color:var(--muted);font-size:14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:28px;padding:32px;max-width:1400px;margin:0 auto}
+  .card{background:#fff;border:1px solid #ededed;border-radius:18px;overflow:hidden;box-shadow:0 2px 10px rgba(30,37,75,.04)}
+  .card h2{margin:0;padding:16px 20px;font-size:15px;font-weight:700;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
+  .tag{font-size:11px;font-weight:600;color:#fff;background:var(--primary);padding:3px 9px;border-radius:20px}
+  .row{display:flex;align-items:center;gap:24px;padding:26px 22px}
+  .row.dark{background:#1b1f2a}
+  .row.dark .lock-word{color:#fff}
+  .row .swatch{flex:1;display:flex;flex-direction:column;gap:18px}
+  .lockup{display:flex;align-items:center;gap:12px}
+  .lock-word{font-size:26px;font-weight:700;letter-spacing:-.5px;color:var(--ink)}
+  .lock-word b{font-weight:800}
+  .lock-word .med{font-weight:400;color:var(--muted)}
+  .row.dark .lock-word .med{color:#9aa0ad}
+  .sizes{display:flex;align-items:center;gap:16px;padding:14px 22px;border-top:1px dashed #eee;background:#fcfcfc}
+  .sizes span{font-size:11px;color:var(--muted)}
+  .note{padding:14px 20px;font-size:12.5px;color:var(--muted);border-top:1px solid #f0f0f0;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <h1>NeuroMedica — Logo Concepts</h1>
+  <p>Coral/orange brand palette (#E55A2A → gradient). Pick one (or mix), then I'll finalize SVG/PNG assets and wire it into the site + poster.</p>
+</header>
+
+<div class="grid">
+
+  <!-- ============ CONCEPT 1: SYNAPSE BRAIN + PULSE ============ -->
+  <div class="card">
+    <h2>Concept 1 — “Synapse” <span class="tag">Recommended</span></h2>
+    <div class="row">
+      <div class="lockup">
+        <!-- icon -->
+        <svg width="78" height="78" viewBox="0 0 100 100" aria-label="logo">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#FFA8C8"/><stop offset="45%" stop-color="#F58947"/>
+              <stop offset="80%" stop-color="#F47325"/><stop offset="100%" stop-color="#FF4F34"/>
+            </linearGradient>
+          </defs>
+          <rect x="2" y="2" width="96" height="96" rx="24" fill="url(#g1)"/>
+          <!-- brain lobes -->
+          <path d="M50 26c-9-8-26-5-29 7-7 2-10 11-5 17-4 6 0 16 8 16 3 6 14 8 19 2 V26z"
+                fill="none" stroke="#fff" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M50 26c9-8 26-5 29 7 7 2 10 11 5 17 4 6 0 16-8 16-3 6-14 8-19 2 V26z"
+                fill="none" stroke="#fff" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round" opacity=".55"/>
+          <!-- nodes -->
+          <circle cx="34" cy="42" r="3" fill="#fff"/><circle cx="44" cy="58" r="3" fill="#fff"/>
+          <circle cx="30" cy="60" r="2.4" fill="#fff" opacity=".8"/>
+          <!-- pulse line -->
+          <path d="M14 76 H40 l4-10 6 20 5-14 4 6 H86" fill="none" stroke="#fff" stroke-width="3.4"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="lock-word"><b>Neuro</b><span class="med">Medica</span></div>
+      </div>
+    </div>
+    <div class="row dark">
+      <div class="lockup">
+        <svg width="78" height="78" viewBox="0 0 100 100">
+          <rect x="2" y="2" width="96" height="96" rx="24" fill="url(#g1)"/>
+          <path d="M50 26c-9-8-26-5-29 7-7 2-10 11-5 17-4 6 0 16 8 16 3 6 14 8 19 2 V26z" fill="none" stroke="#fff" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M50 26c9-8 26-5 29 7 7 2 10 11 5 17 4 6 0 16-8 16-3 6-14 8-19 2 V26z" fill="none" stroke="#fff" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round" opacity=".55"/>
+          <circle cx="34" cy="42" r="3" fill="#fff"/><circle cx="44" cy="58" r="3" fill="#fff"/><circle cx="30" cy="60" r="2.4" fill="#fff" opacity=".8"/>
+          <path d="M14 76 H40 l4-10 6 20 5-14 4 6 H86" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="lock-word"><b>Neuro</b><span class="med">Medica</span></div>
+      </div>
+    </div>
+    <div class="sizes">
+      <svg width="40" height="40" viewBox="0 0 100 100"><rect x="2" y="2" width="96" height="96" rx="24" fill="url(#g1)"/><path d="M50 26c-9-8-26-5-29 7-7 2-10 11-5 17-4 6 0 16 8 16 3 6 14 8 19 2 V26z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><path d="M50 26c9-8 26-5 29 7 7 2 10 11 5 17 4 6 0 16-8 16-3 6-14 8-19 2 V26z" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round" opacity=".55"/><path d="M14 76 H40 l4-10 6 20 5-14 4 6 H86" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/></svg>
+      <svg width="22" height="22" viewBox="0 0 100 100"><rect x="2" y="2" width="96" height="96" rx="24" fill="url(#g1)"/><path d="M50 26c-9-8-26-5-29 7-7 2-10 11-5 17-4 6 0 16 8 16 3 6 14 8 19 2 V26z" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/><path d="M14 76 H40 l4-10 6 20 5-14 4 6 H86" fill="none" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/></svg>
+      <span>favicon / app-icon legibility</span>
+    </div>
+    <div class="note">A brain built from two lobes + synapse nodes, grounded by an ECG pulse line. Reads as “neuro” + “medical” + “AI”. Works as an app tile and shrinks well to a favicon.</div>
+  </div>
+
+  <!-- ============ CONCEPT 2: NEURO-CROSS BADGE ============ -->
+  <div class="card">
+    <h2>Concept 2 — “NeuroCross”</h2>
+    <div class="row">
+      <div class="lockup">
+        <svg width="78" height="78" viewBox="0 0 100 100">
+          <defs>
+            <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#FFA8C8"/><stop offset="45%" stop-color="#F58947"/>
+              <stop offset="80%" stop-color="#F47325"/><stop offset="100%" stop-color="#FF4F34"/>
+            </linearGradient>
+          </defs>
+          <circle cx="50" cy="50" r="46" fill="none" stroke="url(#g2)" stroke-width="6"/>
+          <!-- medical cross -->
+          <path d="M43 26h14v17h17v14H57v17H43V57H26V43h17z" fill="url(#g2)"/>
+          <!-- neural branches off the cross -->
+          <g stroke="url(#g2)" stroke-width="2.6" fill="url(#g2)">
+            <line x1="74" y1="50" x2="86" y2="40"/><circle cx="87" cy="38" r="3.4"/>
+            <line x1="50" y1="74" x2="60" y2="86"/><circle cx="61" cy="87" r="3.4"/>
+            <line x1="26" y1="50" x2="15" y2="58"/><circle cx="13" cy="59" r="3.4"/>
+          </g>
+        </svg>
+        <div class="lock-word"><b>Neuro</b><span class="med">Medica</span></div>
+      </div>
+    </div>
+    <div class="row dark">
+      <div class="lockup">
+        <svg width="78" height="78" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="url(#g2)" stroke-width="6"/>
+          <path d="M43 26h14v17h17v14H57v17H43V57H26V43h17z" fill="url(#g2)"/>
+          <g stroke="url(#g2)" stroke-width="2.6" fill="url(#g2)">
+            <line x1="74" y1="50" x2="86" y2="40"/><circle cx="87" cy="38" r="3.4"/>
+            <line x1="50" y1="74" x2="60" y2="86"/><circle cx="61" cy="87" r="3.4"/>
+            <line x1="26" y1="50" x2="15" y2="58"/><circle cx="13" cy="59" r="3.4"/>
+          </g>
+        </svg>
+        <div class="lock-word"><b>Neuro</b><span class="med">Medica</span></div>
+      </div>
+    </div>
+    <div class="sizes">
+      <svg width="40" height="40" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="url(#g2)" stroke-width="7"/><path d="M43 26h14v17h17v14H57v17H43V57H26V43h17z" fill="url(#g2)"/></svg>
+      <svg width="22" height="22" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="url(#g2)" stroke-width="8"/><path d="M43 26h14v17h17v14H57v17H43V57H26V43h17z" fill="url(#g2)"/></svg>
+      <span>favicon / app-icon legibility</span>
+    </div>
+    <div class="note">A clean medical cross with neural nodes branching out of a ringed badge. Strongest “medical” read; the nodes signal the AI/knowledge layer.</div>
+  </div>
+
+  <!-- ============ CONCEPT 3: MONOGRAM N + NODE ============ -->
+  <div class="card">
+    <h2>Concept 3 — “N” Monogram</h2>
+    <div class="row">
+      <div class="lockup">
+        <svg width="78" height="78" viewBox="0 0 100 100">
+          <defs>
+            <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#FFA8C8"/><stop offset="45%" stop-color="#F58947"/>
+              <stop offset="80%" stop-color="#F47325"/><stop offset="100%" stop-color="#FF4F34"/>
+            </linearGradient>
+          </defs>
+          <rect x="4" y="4" width="92" height="92" rx="26" fill="url(#g3)"/>
+          <!-- N strokes -->
+          <path d="M32 72V32l36 40V32" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- nodes at vertices -->
+          <circle cx="32" cy="32" r="5.5" fill="#fff"/><circle cx="68" cy="72" r="5.5" fill="#fff"/>
+          <circle cx="68" cy="32" r="5.5" fill="#fff"/>
+          <!-- pulse dot -->
+          <circle cx="32" cy="72" r="5.5" fill="#fff" opacity=".75"/>
+        </svg>
+        <div class="lock-word"><b>Neuro</b><span class="med">Medica</span></div>
+      </div>
+    </div>
+    <div class="row dark">
+      <div class="lockup">
+        <svg width="78" height="78" viewBox="0 0 100 100">
+          <rect x="4" y="4" width="92" height="92" rx="26" fill="url(#g3)"/>
+          <path d="M32 72V32l36 40V32" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="32" cy="32" r="5.5" fill="#fff"/><circle cx="68" cy="72" r="5.5" fill="#fff"/><circle cx="68" cy="32" r="5.5" fill="#fff"/><circle cx="32" cy="72" r="5.5" fill="#fff" opacity=".75"/>
+        </svg>
+        <div class="lock-word"><b>Neuro</b><span class="med">Medica</span></div>
+      </div>
+    </div>
+    <div class="sizes">
+      <svg width="40" height="40" viewBox="0 0 100 100"><rect x="4" y="4" width="92" height="92" rx="26" fill="url(#g3)"/><path d="M32 72V32l36 40V32" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="32" r="6" fill="#fff"/><circle cx="68" cy="72" r="6" fill="#fff"/></svg>
+      <svg width="22" height="22" viewBox="0 0 100 100"><rect x="4" y="4" width="92" height="92" rx="26" fill="url(#g3)"/><path d="M32 72V32l36 40V32" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>favicon / app-icon legibility</span>
+    </div>
+    <div class="note">Most minimal/scalable. The “N” doubles as a neural path with synapse nodes at the vertices. Best if you want a simple, modern app-style mark.</div>
+  </div>
+
+</div>
+</body>
+</html>

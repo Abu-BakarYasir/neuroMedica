@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>NeuroMedica FYP Poster (36in x 24in)</title>
+<style>
+  @page { size: 36in 24in; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html,body { background:#525252; }
+
+  :root{
+    /* ===== COMSATS two-tone theme: navy blue + white ONLY ===== */
+    --navy:#243a7e;          /* COMSATS navy blue (bg, bars, header, table heads) */
+    --navy-d:#1d3068;        /* slightly deeper navy for header/footer anchoring */
+    --ink:#161a2e;           /* near-black body text on white */
+    --muted:#54607e;         /* muted captions */
+    --line:#c9cee0;          /* light borders on white */
+    --zebra:#eef1f8;         /* table zebra */
+  }
+
+  .poster{
+    width:36in; height:24in; background:#ffffff;
+    font-family:'Segoe UI', Arial, sans-serif; color:var(--ink);
+    display:flex; flex-direction:column; overflow:hidden; margin:0 auto;
+  }
+
+  /* ===== HEADER (navy bg, white text) ===== */
+  .header{
+    background:var(--navy-d); color:#fff; padding:.36in .6in;
+    display:flex; align-items:center; gap:.5in;
+  }
+  .seal{
+    width:2.1in;height:2.1in;border-radius:50%;flex-shrink:0;background:#fff;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    box-shadow:0 0 0 .04in rgba(255,255,255,.4); padding:.13in;
+  }
+  .seal img{width:100%;height:100%;object-fit:contain;}
+  .head-center{flex:1;text-align:center;}
+  .uni{font-size:53px;font-weight:800;line-height:1.04;color:#fff;}
+  .dept{font-size:40px;font-weight:600;color:#dfe4f5;margin-top:.09in;}
+  .title{margin-top:.14in;font-size:42px;font-weight:800;line-height:1.08;color:#fff;}
+  .title .accent{color:#fff;}
+  .brandlock{display:flex;flex-direction:column;align-items:center;gap:.06in;flex-shrink:0;width:2.2in;}
+  .brandlock .wm{font-size:28px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+  .brandlock .wm span{font-weight:400;color:#dfe4f5;}
+
+  /* ===== BODY GRID ===== */
+  .body{flex:1;display:grid;grid-template-columns:1fr 1.16fr 1.06fr;gap:.34in;padding:.38in .48in .32in;min-height:0;}
+  .col{display:flex;flex-direction:column;justify-content:space-between;min-height:0;gap:.3in;}
+
+  /* ===== CARD (white bg, black text) ===== */
+  .card{background:#fff;border-radius:12px;padding:.34in .34in .38in;border:1.5px solid var(--navy);}
+  /* section title = navy bar, white text */
+  .sec-title{display:flex;align-items:center;gap:.15in;background:var(--navy);color:#fff;
+    padding:.16in .3in;font-size:36px;font-weight:800;margin:-.34in -.34in .24in;border-radius:11px 11px 0 0;}
+  .sec-title .dot{display:none;}
+
+  p,li{font-size:28px;line-height:1.42;color:var(--ink);}
+  .card p+p{margin-top:.12in;}
+  b{color:var(--navy);}
+
+  .obj{list-style:none;padding:0;display:flex;flex-direction:column;gap:.16in;}
+  .obj li{position:relative;padding-left:.48in;font-size:27px;line-height:1.3;}
+  .obj li::before{content:"";position:absolute;left:0;top:.05in;width:.26in;height:.26in;border-radius:5px;background:var(--navy);}
+
+  .key{list-style:none;padding:0;display:flex;flex-direction:column;gap:.16in;}
+  .key li{position:relative;padding-left:.5in;font-size:27px;line-height:1.3;}
+  .key li::before{content:"\2714";position:absolute;left:0;top:0;color:var(--navy);font-weight:900;font-size:28px;}
+
+  .sdg{display:flex;flex-direction:column;gap:.14in;}
+  .sdg .s{display:flex;gap:.18in;align-items:flex-start;font-size:25px;line-height:1.28;}
+  .sdg .n{flex-shrink:0;font-weight:800;color:#fff;background:var(--navy);border-radius:7px;padding:.05in .16in;font-size:22px;}
+
+  /* ===== ARCHITECTURE ===== */
+  .arch{display:flex;flex-direction:column;gap:.11in;}
+  .bar{border-radius:11px;padding:.15in .24in;font-size:29px;font-weight:800;color:#fff;text-align:center;line-height:1.15;background:var(--navy);}
+  .bar small{display:block;font-size:21px;font-weight:500;color:#dfe4f5;margin-top:4px;}
+  .arrow{font-size:30px;color:var(--navy);text-align:center;line-height:.4;}
+  .grp-label{font-size:21px;font-weight:800;color:var(--navy);letter-spacing:.7px;text-transform:uppercase;}
+  .mods{display:flex;flex-direction:column;gap:.12in;}
+  .mod{background:#fff;border:1.5px solid var(--navy);border-left:.09in solid var(--navy);border-radius:10px;padding:.14in .22in;}
+  .mod .h{font-size:26px;font-weight:800;color:var(--navy);}
+  .mod .f{font-size:21px;color:var(--ink);margin-top:5px;line-height:1.32;}
+  .mod .f b{color:var(--navy);}
+
+  /* ===== TABLES (white, navy header) ===== */
+  table{width:100%;border-collapse:collapse;font-size:22px;}
+  th,td{border:1px solid var(--line);padding:.1in .1in;text-align:center;color:var(--ink);}
+  th{background:var(--navy);color:#fff;font-weight:700;font-size:20px;}
+  td:first-child,th:first-child{text-align:left;}
+  tbody tr:nth-child(odd){background:var(--zebra);}
+  tbody tr:nth-child(even){background:#fff;}
+  tr.avg td{background:#dfe4f3;font-weight:800;color:var(--navy);}
+
+  .rescard{margin-bottom:.22in;}
+  .rescard:last-child{margin-bottom:0;}
+  .rescard .rh{font-size:27px;font-weight:800;color:var(--navy);margin-bottom:.1in;display:flex;align-items:center;gap:.13in;flex-wrap:wrap;}
+  .rescard .rh .pill{font-size:18px;font-weight:700;color:#fff;background:var(--navy);border-radius:18px;padding:.04in .18in;}
+  .statline{display:flex;flex-wrap:wrap;gap:.06in .26in;font-size:25px;margin:.07in 0;}
+  .statline span{font-weight:700;color:var(--ink);}
+  .statline b{color:var(--navy);font-size:31px;}
+  .mini{font-size:21px;color:var(--muted);margin-top:.07in;line-height:1.32;}
+  .mini b{color:var(--navy);}
+  .ragb{list-style:none;padding:0;display:flex;flex-direction:column;gap:.1in;margin-top:.05in;}
+  .ragb li{position:relative;padding-left:.36in;font-size:22px;line-height:1.3;color:var(--ink);}
+  .ragb li::before{content:"\25B8";position:absolute;left:0;top:0;color:var(--navy);font-weight:900;}
+  .ragb b{color:var(--navy);}
+
+  .ds{display:flex;flex-direction:column;gap:.13in;}
+  .ds .row{display:flex;justify-content:space-between;align-items:baseline;gap:.2in;font-size:23px;
+    border-bottom:1px dashed var(--line);padding-bottom:.1in;}
+  .ds .row b{color:var(--ink);}
+  .ds .row span{color:var(--navy);font-weight:700;text-align:right;flex-shrink:0;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:.12in;}
+  .chip{background:#fff;border:1.5px solid var(--navy);border-radius:20px;padding:.08in .2in;font-size:22px;font-weight:600;color:var(--ink);
+    display:inline-flex;align-items:center;gap:.1in;}
+  .chip b{color:var(--navy);}
+  .chip img{height:27px;width:27px;flex-shrink:0;}
+
+  .two{display:flex;gap:.26in;}
+  .two>div{flex:1;}
+  .person{font-size:27px;font-weight:800;color:var(--navy);line-height:1.14;}
+  .person small{display:block;font-size:21px;font-weight:600;color:var(--muted);margin-top:4px;}
+  .member{display:flex;justify-content:space-between;align-items:center;
+    padding:.14in .2in;border:1.5px solid var(--line);border-radius:10px;background:#fff;}
+  .member+.member{margin-top:.13in;}
+  .member .nm{font-size:25px;font-weight:700;color:var(--ink);}
+  .member .reg{font-size:22px;font-weight:700;color:var(--navy);font-family:Consolas,monospace;}
+
+  /* ===== FOOTER (navy bg, white text) ===== */
+  .footer{background:var(--navy-d);color:#fff;display:flex;align-items:center;justify-content:space-between;
+    padding:.18in .55in;font-size:22px;border-top:.04in solid #fff;}
+  .footer .dis{color:#dfe4f5;font-weight:600;}
+  .footer .yr{color:#c8cfe8;}
+  .footer .wm{font-weight:800;}
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <!-- ===== HEADER ===== -->
+  <div class="header">
+    <div class="seal"><img src="comsats-logo.svg" alt="COMSATS University" /></div>
+    <div class="head-center">
+      <div class="uni">COMSATS University Islamabad, Lahore Campus</div>
+      <div class="dept">Department of Computer Engineering</div>
+      <div class="title">NeuroMedica: An AI-Powered Medical Imaging <span class="accent">&amp;</span> Knowledge Assistant</div>
+    </div>
+    <div class="brandlock">
+      <svg width="150" height="150" viewBox="0 0 100 100" aria-label="NeuroMedica">
+        <rect x="2" y="2" width="96" height="96" rx="24" fill="#fff"/>
+        <rect x="6" y="6" width="88" height="88" rx="20" fill="#243a7e"/>
+        <g fill="none" stroke="#fff" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M50 23 C44 18 35 19 32 25 C24 22 18 29 23 35 C17 39 19 47 26 48 C22 54 27 61 34 58 C38 63 46 62 50 57 C54 62 62 63 66 58 C73 61 78 54 74 48 C81 47 83 39 77 35 C82 29 76 22 68 25 C65 19 56 18 50 23 Z"/>
+          <path d="M50 24 V57"/><path d="M33 30 C39 33 38 39 32 41"/><path d="M67 30 C61 33 62 39 68 41"/>
+        </g>
+        <g fill="#fff"><circle cx="32" cy="25" r="2.6"/><circle cx="68" cy="25" r="2.6"/><circle cx="26" cy="48" r="2.4"/><circle cx="74" cy="48" r="2.4"/></g>
+        <path d="M14 73 H40 l3 -9 4 18 4 -12 3 7 H86" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="wm">Neuro<span>Medica</span></div>
+    </div>
+  </div>
+
+  <!-- ===== BODY ===== -->
+  <div class="body">
+
+    <!-- ===== LEFT ===== -->
+    <div class="col">
+      <div class="card">
+        <div class="sec-title"><span class="dot"></span>Abstract</div>
+        <p>NeuroMedica is a single, <b>explainable AI platform</b> for medical education that unifies four AI modalities (<b>imaging, signal, document, and language intelligence</b>) in one web application. It interprets <b>chest X-rays</b> and <b>ECGs</b>, digitises handwritten <b>prescriptions</b> via OCR, and answers clinical questions through <b>retrieval-augmented generation</b> grounded in trusted literature. Every output is transparent, citation-backed, and feeds an editable structured report, built strictly as an <b>educational decision-support aid, not a clinical substitute</b>.</p>
+      </div>
+
+      <div class="card">
+        <div class="sec-title"><span class="dot"></span>Problem &amp; Objectives</div>
+        <p style="margin-bottom:.16in;">Today's medical-learning AI tools are <b>fragmented, opaque "black boxes,"</b> and prone to ungrounded output. NeuroMedica integrates them into one trustworthy system:</p>
+        <ul class="obj">
+          <li>AI <b>Chest X-ray</b> analysis with Grad-CAM visual explanations.</li>
+          <li>AI <b>ECG</b> analysis recognising rhythm patterns &amp; beat types.</li>
+          <li>AI <b>OCR</b> to digitise prescriptions into editable records.</li>
+          <li>Reference-grounded <b>Medical Q&amp;A</b> with high-precision citations.</li>
+          <li><b>Symptom-to-disease</b> exploration with educational write-ups.</li>
+          <li>Unify all modules to generate <b>structured reports</b>.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="sec-title"><span class="dot"></span>Key Outcomes</div>
+        <ul class="key">
+          <li><b>OCR near-human</b> accuracy (93.4%) with only 0.2% hallucinated words, safe for medication transcription.</li>
+          <li><b>Chest X-ray</b> DenseNet-121 reaches 0.846 Macro AUC-ROC across 14 pathologies.</li>
+          <li><b>ECG</b> weighted 1D-CNN achieves 0.94 weighted F1 over 17,511 test beats.</li>
+          <li><b>RAG</b> answers stay grounded &amp; traceable; CRAG declines when evidence is insufficient.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="sec-title"><span class="dot"></span>Impact &amp; SDGs</div>
+        <div class="sdg">
+          <div class="s"><span class="n">SDG 3</span><div><b>Good Health:</b> trains the next generation of clinicians with safer, evidence-based AI.</div></div>
+          <div class="s"><span class="n">SDG 4</span><div><b>Quality Education:</b> accessible, multimodal, explainable learning anywhere.</div></div>
+          <div class="s"><span class="n">SDG 9</span><div><b>Innovation:</b> integrated, responsible AI infrastructure for healthcare education.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MIDDLE ===== -->
+    <div class="col">
+      <div class="card">
+        <div class="sec-title"><span class="dot"></span>System Architecture &amp; Methodology</div>
+        <div class="arch">
+          <div class="bar">Unified Web Workspace &nbsp;·&nbsp; single login · single interface
+            <small>Next.js 15 frontend · FastAPI backend · Supabase (PostgreSQL) · GPU inference engine</small></div>
+          <div class="arrow">▼</div>
+
+          <div class="grp-label">Imaging &amp; Signal Intelligence</div>
+          <div class="mods">
+            <div class="mod"><div class="h">Chest X-ray Analysis</div>
+              <div class="f">X-ray → <b>DenseNet-121</b> (CheXNet transfer learning, dual-head) → 14-pathology multi-label + Normal/Abnormal → <b>Grad-CAM</b> heat-map</div></div>
+            <div class="mod"><div class="h">ECG Signal Analysis</div>
+              <div class="f">ECG image → signal digitiser → <b>1D-CNN</b> (class-weighted) → AAMI 5-class beats: N · S · V · F · Q</div></div>
+          </div>
+
+          <div class="grp-label">Document &amp; Knowledge Intelligence</div>
+          <div class="mods">
+            <div class="mod"><div class="h">OCR Prescription Digitisation</div>
+              <div class="f">Prescription image → <b>Qwen2-VL-7B-Instruct</b> (4-bit nf4) → validated structured JSON → editable patient record</div></div>
+            <div class="mod"><div class="h">RAG Medical Q&amp;A</div>
+              <div class="f">Query → hybrid retrieval <b>(PubMedBERT+Qdrant · BM25 · Neo4j)</b> → RRF → rerank → <b>CRAG</b> self-eval + PubMed fallback → <b>Claude</b> → cited answer</div></div>
+            <div class="mod"><div class="h">Symptom Explorer</div>
+              <div class="f">Symptoms → retrieval-grounded differential diagnosis → educational treatment notes</div></div>
+          </div>
+
+          <div class="arrow">▼</div>
+          <div class="bar">Explainable, Citation-Backed Output
+            <small>predictions · confidence badges · sources → editable structured clinical report</small></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-title"><span class="dot"></span>Datasets &amp; Technology</div>
+        <div class="ds">
+          <div class="row"><b>Chest X-ray: NIH ChestX-ray14</b><span>14 pathology classes</span></div>
+          <div class="row"><b>ECG: MIT-BIH Arrhythmia (AAMI EC57)</b><span>5 beat classes</span></div>
+          <div class="row"><b>OCR: IAM Handwriting + prescriptions</b><span>VLM digitisation</span></div>
+          <div class="row" style="border-bottom:none;"><b>Knowledge: PubMed / medical literature</b><span>RAG corpus</span></div>
+        </div>
+        <div class="chips" style="margin-top:.18in;">
+          <span class="chip"><img src="techicons/nextdotjs.svg" alt=""><b>FE:</b> Next.js 15</span>
+          <span class="chip"><img src="techicons/fastapi.svg" alt=""><b>BE:</b> FastAPI · Python</span>
+          <span class="chip"><img src="techicons/supabase.svg" alt=""><b>DB:</b> Supabase</span>
+          <span class="chip"><img src="techicons/pytorch.svg" alt=""><b>Imaging:</b> PyTorch</span>
+          <span class="chip"><img src="techicons/tensorflow.svg" alt=""><b>Signal:</b> TensorFlow/Keras</span>
+          <span class="chip"><b>OCR:</b> Qwen2-VL-7B</span>
+          <span class="chip"><img src="techicons/claude.svg" alt=""><b>LLM:</b> Claude</span>
+          <span class="chip"><img src="techicons/qdrant.svg" alt=""><b>Vector:</b> Qdrant · PubMedBERT</span>
+          <span class="chip"><b>XAI:</b> Grad-CAM</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-title"><span class="dot"></span>Safety &amp; Explainability</div>
+        <ul class="ragb" style="gap:.1in;">
+          <li style="font-size:21px;"><b>Grad-CAM</b> heat-maps reveal <i>why</i> the X-ray model reached a finding.</li>
+          <li style="font-size:21px;">RAG answers carry <b>inline citations, confidence badges &amp; disclaimers</b>; the CRAG guardrail refuses ungrounded replies.</li>
+          <li style="font-size:21px;">OCR enforces strict JSON, so <b>no hallucinated drug names</b>. Educational-use-only; no real-time patient data.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== RIGHT ===== -->
+    <div class="col">
+      <div class="card">
+        <div class="sec-title"><span class="dot"></span>Results &amp; Evaluation</div>
+
+        <div class="rescard">
+          <div class="rh">Chest X-ray <span class="pill">DenseNet-121 · 14 classes</span></div>
+          <div class="statline"><span>Macro AUC-ROC <b>0.846</b></span><span>Binary AUC <b>0.787</b></span><span>Binary F1 <b>0.674</b></span></div>
+          <table>
+            <thead><tr><th>Best classes</th><th>AUC</th><th>Hardest classes</th><th>AUC</th></tr></thead>
+            <tbody>
+              <tr><td>Edema</td><td>0.926</td><td>Cardiomegaly</td><td>0.901</td></tr>
+              <tr><td>Hernia</td><td>0.924</td><td>Pneumonia</td><td>0.740</td></tr>
+              <tr><td>Emphysema</td><td>0.911</td><td>Infiltration</td><td>0.713</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="rescard">
+          <div class="rh">ECG <span class="pill">Weighted 1D-CNN · MIT-BIH · 17,511 beats</span></div>
+          <table>
+            <thead><tr><th>Beat class</th><th>Prec.</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead>
+            <tbody>
+              <tr><td>Normal (N)</td><td>0.99</td><td>0.94</td><td>0.96</td><td>14,494</td></tr>
+              <tr><td>Supraventricular (S)</td><td>0.47</td><td>0.82</td><td>0.59</td><td>445</td></tr>
+              <tr><td>PVC / Ventricular (V)</td><td>0.81</td><td>0.96</td><td>0.88</td><td>1,158</td></tr>
+              <tr><td>Fusion (F)</td><td>0.28</td><td>0.88</td><td>0.42</td><td>128</td></tr>
+              <tr><td>Unknown / Paced (Q)</td><td>0.98</td><td>0.98</td><td>0.98</td><td>1,286</td></tr>
+              <tr class="avg"><td>Weighted Avg</td><td>0.96</td><td>0.94</td><td>0.94</td><td>17,511</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="rescard">
+          <div class="rh">OCR <span class="pill">Qwen2-VL-7B · IAM · 932 words</span></div>
+          <div class="statline"><span>Accuracy <b>93.4%</b></span><span>Precision <b>0.957</b></span><span>Recall <b>0.937</b></span><span>F1 <b>0.947</b></span></div>
+          <div class="mini">Error mix → Substitutions 4.0% · Deletions 2.4% · <b>Hallucinated insertions just 0.2%</b>, safe for medication transcription.</div>
+        </div>
+
+        <div class="rescard">
+          <div class="rh">RAG Knowledge Assistant</div>
+          <ul class="ragb">
+            <li>Hybrid dense + sparse + graph retrieval with RRF &amp; reranking.</li>
+            <li>CRAG self-evaluation with live PubMed fallback; declines when evidence is insufficient.</li>
+            <li>Retrieval latency <b>200–400 ms</b> (&lt; 500 ms target); every answer carries inline citations + confidence badge.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-title"><span class="dot"></span>Supervisors</div>
+        <div class="two">
+          <div><div class="person">Dr. Muhammad Farooq-i-Azam<small>Supervisor · Assistant Professor</small></div></div>
+          <div><div class="person">Engr. Tabassum Nawaz Bajwa<small>Co-Supervisor</small></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-title"><span class="dot"></span>Group Members</div>
+        <div class="member"><span class="nm">Abu Bakar Yasir</span><span class="reg">CIIT/FA22-BCE-075</span></div>
+        <div class="member"><span class="nm">Abdullah Asif</span><span class="reg">CIIT/FA22-BCE-066</span></div>
+        <div class="member"><span class="nm">Abdul Hannan</span><span class="reg">CIIT/FA22-BCE-061</span></div>
+        <div class="member"><span class="nm">Awais Khizer</span><span class="reg">CIIT/FA22-BCE-048</span></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

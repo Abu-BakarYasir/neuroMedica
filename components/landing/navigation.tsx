@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { NeuroMedicaLogo } from "@/components/neuromedica-logo";
 import { Menu, X } from "lucide-react";
 
 const navLinks = [
@@ -48,11 +49,8 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link
-            href="/"
-            className="text-xl font-semibold text-[#212121] hover:text-neuro-primary transition-colors"
-          >
-            Neuro Medica
+          <Link href="/" className="transition-opacity hover:opacity-80">
+            <NeuroMedicaLogo size={32} textSize="text-xl" />
           </Link>
 
           {/* Desktop Navigation */}
