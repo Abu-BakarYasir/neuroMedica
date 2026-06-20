@@ -3,8 +3,7 @@
 
 export const heroContent = {
   headline: "Explainable AI for Medical Education",
-  subheadline: "A unified platform integrating medical imaging analysis, ECG interpretation, reference-grounded Q&A, and structured report generation—designed for learning, not diagnosis.",
-  disclaimer: "Educational Use Only • Not for Clinical Decision-Making",
+  subheadline: "A unified platform integrating medical imaging analysis, ECG interpretation, reference-grounded Q&A, and structured report generation.",
   primaryCta: "Get Started",
   secondaryCta: "Learn More",
 };
@@ -190,7 +189,7 @@ export const finalCtaContent = {
   subtitle: "Join medical students, clinicians, and researchers using explainable AI for learning",
   primaryCta: "Get Started",
   secondaryCta: "Learn More",
-  disclaimer: "Free for educational use • No credit card required",
+  disclaimer: "Free to get started • No credit card required",
 };
 
 export const footerContent = {
@@ -201,7 +200,6 @@ export const footerContent = {
     { label: "About", href: "#" },
     { label: "Contact", href: "#" },
   ],
-  disclaimer: "This platform is for educational purposes only. It is not intended for clinical decision-making or patient diagnosis.",
   copyright: "© 2024 Neuro Medica. All rights reserved.",
 };
 

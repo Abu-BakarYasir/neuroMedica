@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { heroContent } from "@/lib/landing-content";
-import { CheckCircle2, Users } from "lucide-react";
+import { Users } from "lucide-react";
 
 export function HeroSection() {
   const scrollToFeatures = () => {
@@ -53,11 +53,6 @@ export function HeroSection() {
               transition={{ duration: 0.6 }}
               className="space-y-6"
             >
-              <div className="inline-flex items-center gap-2 text-sm font-medium text-[#DFAD0C] bg-[#FBF6E4] px-4 py-2 rounded-[10px]">
-                <CheckCircle2 size={16} />
-                <span>{heroContent.disclaimer}</span>
-              </div>
-
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-[#212121] leading-tight">
                 {heroContent.headline}
               </h1>

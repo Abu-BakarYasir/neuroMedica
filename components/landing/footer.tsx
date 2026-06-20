@@ -65,13 +65,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Disclaimer */}
-          <div className="space-y-4 md:col-span-1">
-            <h4 className="text-sm font-semibold text-[#212121]">Important</h4>
-            <p className="text-xs text-[#8D8D8D] leading-relaxed">
-              {footerContent.disclaimer}
-            </p>
-          </div>
         </div>
 
         {/* Copyright */}
