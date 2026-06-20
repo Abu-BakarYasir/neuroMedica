@@ -37,7 +37,7 @@ export function AddToReportButton({
     >
       {added ? (
         <>
-          <Check className="h-4 w-4 text-emerald-600" />
+          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           Added
         </>
       ) : (

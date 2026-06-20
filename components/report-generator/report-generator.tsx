@@ -35,9 +35,6 @@ const KIND_LABEL: Record<ReportItem["kind"], string> = {
   note: "Note",
 };
 
-const DISCLAIMER =
-  "This report is for educational purposes only. AI-generated content must be verified by a qualified clinician.";
-
 function fmtDate(v?: string | null) {
   if (!v) return "";
   const d = new Date(v);
@@ -227,10 +224,10 @@ export function ReportGenerator() {
           <FileText className="h-5 w-5 text-neuro-primary" />
         </div>
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-[#212121]">
+          <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
             Report Generator
           </h1>
-          <p className="text-[13px] text-[#525252] mt-0.5">
+          <p className="text-[13px] text-muted-foreground mt-0.5">
             Assemble outputs captured from ECG, Chest X-ray, Medical Q&amp;A, and
             Symptom Explorer into a structured report, then save or export to PDF.
           </p>
@@ -238,17 +235,17 @@ export function ReportGenerator() {
       </div>
 
       {error && (
-        <div className="mb-4 flex items-start gap-3 rounded-[14px] border border-rose-200 bg-rose-50 p-4">
-          <AlertCircle className="h-4 w-4 text-rose-600 mt-0.5 flex-shrink-0" />
-          <p className="text-[12px] text-rose-700">{error}</p>
+        <div className="mb-4 flex items-start gap-3 rounded-[14px] border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/50 dark:bg-rose-950/40">
+          <AlertCircle className="h-4 w-4 text-rose-600 mt-0.5 flex-shrink-0 dark:text-rose-400" />
+          <p className="text-[12px] text-rose-700 dark:text-rose-300">{error}</p>
         </div>
       )}
 
       {/* Compose */}
-      <div className="rounded-[16px] border border-[#E5E5E5] bg-white p-4 shadow-sm space-y-3">
+      <div className="rounded-[16px] border border-border bg-card p-4 shadow-sm space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-[12px] text-[#525252] mb-1 block">Report title</label>
+            <label className="text-[12px] text-muted-foreground mb-1 block">Report title</label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -256,7 +253,7 @@ export function ReportGenerator() {
             />
           </div>
           <div>
-            <label className="text-[12px] text-[#525252] mb-1 block">Patient (optional)</label>
+            <label className="text-[12px] text-muted-foreground mb-1 block">Patient (optional)</label>
             <select
               value={patientName}
               onChange={(e) => setPatientName(e.target.value)}
@@ -273,7 +270,7 @@ export function ReportGenerator() {
         </div>
 
         <div>
-          <label className="text-[12px] text-[#525252] mb-1 block">Clinical notes (optional)</label>
+          <label className="text-[12px] text-muted-foreground mb-1 block">Clinical notes (optional)</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -285,11 +282,11 @@ export function ReportGenerator() {
 
         {/* Draft items */}
         <div>
-          <div className="text-[12px] text-[#525252] mb-2">
+          <div className="text-[12px] text-muted-foreground mb-2">
             Captured sections ({draft.length})
           </div>
           {draft.length === 0 ? (
-            <div className="rounded-[12px] border border-dashed border-[#E5E5E5] bg-[#FAFAFA] p-5 text-center text-[12px] text-[#767676]">
+            <div className="rounded-[12px] border border-dashed border-border bg-muted p-5 text-center text-[12px] text-muted-foreground">
               No sections yet. Open ECG, Chest X-ray, Medical Q&amp;A, or Symptom
               Explorer, run an analysis, and click <strong>Add to report</strong>.
             </div>
@@ -298,16 +295,16 @@ export function ReportGenerator() {
               {draft.map((it, idx) => (
                 <div
                   key={it.id}
-                  className="flex items-start gap-2 rounded-[12px] border border-[#EDEDED] bg-white p-3"
+                  className="flex items-start gap-2 rounded-[12px] border border-border bg-card p-3"
                 >
                   <span className="text-[10px] uppercase tracking-wide font-semibold text-neuro-primary bg-neuro-primary/10 rounded px-1.5 py-0.5 mt-0.5 flex-shrink-0">
                     {KIND_LABEL[it.kind]}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-[#212121] truncate">
+                    <div className="text-[13px] font-medium text-foreground truncate">
                       {it.title}
                     </div>
-                    <div className="text-[11px] text-[#767676] line-clamp-2 whitespace-pre-wrap">
+                    <div className="text-[11px] text-muted-foreground line-clamp-2 whitespace-pre-wrap">
                       {it.markdown.replace(/\*\*/g, "")}
                     </div>
                   </div>
@@ -338,7 +335,7 @@ export function ReportGenerator() {
 
         <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
           {draft.length > 0 && (
-            <Button variant="ghost" onClick={() => clearDraft()} className="text-[#767676]">
+            <Button variant="ghost" onClick={() => clearDraft()} className="text-muted-foreground">
               <Trash2 className="h-4 w-4" />
               Clear draft
             </Button>
@@ -367,25 +364,25 @@ export function ReportGenerator() {
 
       {/* Saved reports */}
       <div className="mt-6">
-        <h2 className="text-[15px] font-semibold text-[#212121] mb-3">Saved reports</h2>
+        <h2 className="text-[15px] font-semibold text-foreground mb-3">Saved reports</h2>
         {savedNote ? (
-          <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800">
+          <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
             {savedNote}
           </div>
         ) : saved.length === 0 ? (
-          <p className="text-[12px] text-[#767676]">No saved reports yet.</p>
+          <p className="text-[12px] text-muted-foreground">No saved reports yet.</p>
         ) : (
           <div className="space-y-2">
             {saved.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center gap-3 rounded-[12px] border border-[#EDEDED] bg-white p-3"
+                className="flex items-center gap-3 rounded-[12px] border border-border bg-card p-3"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-[#212121] truncate">
+                  <div className="text-[13px] font-medium text-foreground truncate">
                     {r.title}
                   </div>
-                  <div className="text-[11px] text-[#767676]">
+                  <div className="text-[11px] text-muted-foreground">
                     {fmtDate(r.created_at)}
                     {r.patient_name ? ` · ${r.patient_name}` : ""} ·{" "}
                     {(r.items?.length ?? 0)} section
@@ -396,7 +393,7 @@ export function ReportGenerator() {
                   Open
                 </Button>
                 <IconBtn label="Delete report" onClick={() => onDelete(r.id)}>
-                  <Trash2 className="h-4 w-4 text-rose-600" />
+                  <Trash2 className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                 </IconBtn>
               </div>
             ))}
@@ -406,9 +403,9 @@ export function ReportGenerator() {
 
       {/* Viewing a saved report */}
       {viewingView && (
-        <div className="mt-6 rounded-[16px] border border-[#E5E5E5] bg-white p-4 shadow-sm">
+        <div className="mt-6 rounded-[16px] border border-border bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[15px] font-semibold text-[#212121]">{viewingView.title}</h3>
+            <h3 className="text-[15px] font-semibold text-foreground">{viewingView.title}</h3>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -459,7 +456,7 @@ function IconBtn({
       title={label}
       onClick={onClick}
       disabled={disabled}
-      className="p-1.5 rounded-md text-[#767676] hover:bg-[#F2F2F2] disabled:opacity-30"
+      className="p-1.5 rounded-md text-muted-foreground hover:bg-muted disabled:opacity-30"
     >
       {children}
     </button>
@@ -470,25 +467,24 @@ function IconBtn({
 function ReportBody({ view }: { view: ReportView }) {
   return (
     <div className="space-y-4">
-      <div className="text-[12px] text-[#767676]">
+      <div className="text-[12px] text-muted-foreground">
         {view.patientName ? `Patient: ${view.patientName} · ` : ""}
         {view.dateStr}
       </div>
       {view.items.map((it) => (
         <div key={it.id}>
-          <div className="text-[13px] font-semibold text-[#212121] mb-1">{it.title}</div>
-          <div className="text-[12px] text-[#374151] leading-relaxed">
+          <div className="text-[13px] font-semibold text-foreground mb-1">{it.title}</div>
+          <div className="text-[12px] text-muted-foreground leading-relaxed">
             {renderMd(it.markdown)}
           </div>
         </div>
       ))}
       {view.notes && (
         <div>
-          <div className="text-[13px] font-semibold text-[#212121] mb-1">Clinical notes</div>
-          <div className="text-[12px] text-[#374151] whitespace-pre-wrap">{view.notes}</div>
+          <div className="text-[13px] font-semibold text-foreground mb-1">Clinical notes</div>
+          <div className="text-[12px] text-muted-foreground whitespace-pre-wrap">{view.notes}</div>
         </div>
       )}
-      <p className="text-[10px] text-[#838383] pt-2 border-t border-[#EEE]">{DISCLAIMER}</p>
     </div>
   );
 }
@@ -533,9 +529,6 @@ function Printable({
           <div style={{ whiteSpace: "pre-wrap" }}>{view.notes}</div>
         </div>
       )}
-      <div style={{ fontSize: 10, color: "#777", borderTop: "1px solid #ccc", paddingTop: 8 }}>
-        {DISCLAIMER}
-      </div>
     </div>
   );
 }
