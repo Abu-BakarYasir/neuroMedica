@@ -56,6 +56,20 @@ export const clinicalToolsSidebarItems: NavigationItem[] = [
     icon: "/assets/sidebar-icons/medical-qa-icon.svg",
     section: "main",
   },
+  {
+    id: "symptom-explorer",
+    name: "Symptom Explorer",
+    href: "/protected/symptom-explorer",
+    icon: "/assets/sidebar-icons/clinicals-icon.svg",
+    section: "main",
+  },
+  {
+    id: "report-generator",
+    name: "Report Generator",
+    href: "/protected/report-generator",
+    icon: "/assets/sidebar-icons/documentation-icon.svg",
+    section: "main",
+  },
 ];
 
 export const settingsHelpNavigationItems: NavigationItem[] = [

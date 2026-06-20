@@ -16,6 +16,7 @@ import {
   FileText,
   X,
   Pill,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -24,6 +25,7 @@ import {
   type ChatAttachment,
 } from "@/lib/chatbot/attachments";
 import { PrescriptionPicker } from "./prescription-picker";
+import { PatientPicker } from "./patient-picker";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -50,6 +52,7 @@ export function ChatInput({
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [prescriptionPickerOpen, setPrescriptionPickerOpen] = useState(false);
+  const [patientPickerOpen, setPatientPickerOpen] = useState(false);
   const [isReadingFile, setIsReadingFile] = useState(false);
   const [attachError, setAttachError] = useState<string | null>(null);
 
@@ -151,6 +154,23 @@ export function ChatInput({
     setPrescriptionPickerOpen(true);
   };
 
+  const handlePatientPick = () => {
+    setAttachMenuOpen(false);
+    setPatientPickerOpen(true);
+  };
+
+  // Typing "/patient" (the slash command) opens the patient picker and clears
+  // the trigger token so it doesn't get sent as part of the message.
+  const handleMessageChange = (value: string) => {
+    if (/^\/patients?\s*$/i.test(value)) {
+      setMessage("");
+      setAttachMenuOpen(false);
+      setPatientPickerOpen(true);
+      return;
+    }
+    setMessage(value);
+  };
+
   const removeAttachment = (id: string) => {
     setAttachments((prev) => prev.filter((a) => a.id !== id));
   };
@@ -163,6 +183,10 @@ export function ChatInput({
   const attachedPrescriptionIds = attachments
     .filter((a): a is Extract<ChatAttachment, { kind: "prescription" }> => a.kind === "prescription")
     .map((a) => a.recordId);
+
+  const attachedPatientIds = attachments
+    .filter((a): a is Extract<ChatAttachment, { kind: "patient" }> => a.kind === "patient")
+    .map((a) => a.patientId);
 
   return (
     <div>
@@ -221,6 +245,20 @@ export function ChatInput({
             >
               <button
                 type="button"
+                onClick={handlePatientPick}
+                className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left text-sm hover:bg-muted"
+              >
+                <User className="w-4 h-4 mt-0.5 text-neuro-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-medium">Patient record</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Attach a patient (or type /patient)
+                  </p>
+                </div>
+              </button>
+              <div className="h-px bg-border" />
+              <button
+                type="button"
                 onClick={handlePrescriptionPick}
                 className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left text-sm hover:bg-muted"
               >
@@ -262,9 +300,9 @@ export function ChatInput({
         <textarea
           ref={textareaRef}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => handleMessageChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message Med Assistant…"
+          placeholder="Message Med Assistant…  (type /patient to attach a patient)"
           disabled={isLoading || disabled}
           rows={1}
           className={cn(
@@ -332,6 +370,13 @@ export function ChatInput({
         alreadyAttachedIds={attachedPrescriptionIds}
         onSelect={(att) => setAttachments((prev) => [...prev, att])}
       />
+
+      <PatientPicker
+        open={patientPickerOpen}
+        onOpenChange={setPatientPickerOpen}
+        alreadyAttachedIds={attachedPatientIds}
+        onSelect={(att) => setAttachments((prev) => [...prev, att])}
+      />
     </div>
   );
 }
@@ -347,6 +392,31 @@ function AttachmentChip({
   attachment: ChatAttachment;
   onRemove: () => void;
 }) {
+  if (attachment.kind === "patient") {
+    return (
+      <div className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-neuro-primary/30 bg-neuro-primary/10 text-neuro-primary px-2.5 py-1">
+        <User className="w-3 h-3 shrink-0" />
+        <span className="text-[11px] font-medium truncate">
+          Patient · {attachment.name}
+          {attachment.prescriptionCount > 0 && (
+            <span className="text-neuro-primary/70 font-normal">
+              {" "}
+              ({attachment.prescriptionCount} Rx)
+            </span>
+          )}
+        </span>
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label="Remove attachment"
+          className="ml-0.5 -mr-1 p-0.5 rounded-full hover:bg-neuro-primary/20"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
+
   if (attachment.kind === "prescription") {
     const medCount = attachment.medications.length;
     return (

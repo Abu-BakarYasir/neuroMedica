@@ -10,7 +10,35 @@
  * metadata so the model at least knows a document was referenced.
  */
 
-export type AttachmentKind = "prescription" | "file";
+export type AttachmentKind = "prescription" | "patient" | "file";
+
+/** A single scanned prescription summarised for a patient context block. */
+export interface PatientPrescriptionSummary {
+  prescriptionDate: string | null;
+  createdAt: string;
+  medications: Array<{
+    medicine_name?: string | null;
+    dosage?: string | null;
+    frequency?: string | null;
+  }>;
+}
+
+export interface PatientAttachment {
+  id: string;                 // local UI id
+  kind: "patient";
+  patientId: string;          // manual row id, or synthetic "rx:<name>" id
+  name: string;
+  source: "manual" | "prescription";
+  dateOfBirth: string | null;
+  sex: string | null;
+  phone: string | null;
+  address: string | null;
+  notes: string | null;
+  prescriptionCount: number;
+  lastPrescriptionAt: string | null;
+  /** Scanned prescription history for this patient (may be empty). */
+  prescriptions: PatientPrescriptionSummary[];
+}
 
 export interface PrescriptionAttachment {
   id: string;                 // local UI id
@@ -38,7 +66,10 @@ export interface FileAttachment {
   isBinary: boolean;
 }
 
-export type ChatAttachment = PrescriptionAttachment | FileAttachment;
+export type ChatAttachment =
+  | PrescriptionAttachment
+  | PatientAttachment
+  | FileAttachment;
 
 // ---------------------------------------------------------------------------
 //  Limits
@@ -127,6 +158,46 @@ function formatPrescription(p: PrescriptionAttachment): string {
   ].join("\n");
 }
 
+function formatPatient(p: PatientAttachment): string {
+  const profile: string[] = [
+    `- Name: ${p.name || "Unknown"}`,
+    p.dateOfBirth ? `- Date of birth: ${p.dateOfBirth}` : null,
+    p.sex && p.sex !== "unknown" ? `- Sex: ${p.sex}` : null,
+    p.phone ? `- Phone: ${p.phone}` : null,
+    p.address ? `- Address: ${p.address}` : null,
+    p.notes ? `- Notes: ${p.notes}` : null,
+    `- Prescriptions on file: ${p.prescriptionCount}`,
+    p.lastPrescriptionAt
+      ? `- Last prescription: ${new Date(p.lastPrescriptionAt).toLocaleDateString()}`
+      : null,
+  ].filter(Boolean) as string[];
+
+  const lines = [`### Patient record`, ...profile];
+
+  if (p.prescriptions.length > 0) {
+    lines.push(`- Prescription history:`);
+    p.prescriptions.forEach((rx, i) => {
+      const date = rx.prescriptionDate || new Date(rx.createdAt).toLocaleDateString();
+      const meds =
+        rx.medications.length > 0
+          ? rx.medications
+              .map((m) => {
+                const parts = [
+                  m.medicine_name ?? "(unnamed)",
+                  m.dosage ? `dose: ${m.dosage}` : null,
+                  m.frequency ? `freq: ${m.frequency}` : null,
+                ].filter(Boolean);
+                return parts.join(" — ");
+              })
+              .join("; ")
+          : "(no medications recorded)";
+      lines.push(`  ${i + 1}. [${date}] ${meds}`);
+    });
+  }
+
+  return lines.join("\n");
+}
+
 function formatFile(f: FileAttachment): string {
   const sizeKb = (f.size / 1024).toFixed(1);
   const header = `### Attached file: ${f.name} (${f.mimeType || "unknown"}, ${sizeKb} KB)`;
@@ -155,7 +226,11 @@ export function composeMessageWithAttachments(
   if (attachments.length === 0) return userMessage;
 
   const blocks = attachments.map((a) =>
-    a.kind === "prescription" ? formatPrescription(a) : formatFile(a)
+    a.kind === "prescription"
+      ? formatPrescription(a)
+      : a.kind === "patient"
+        ? formatPatient(a)
+        : formatFile(a)
   );
 
   return [
