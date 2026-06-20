@@ -4,6 +4,7 @@ This is the main orchestrator that wires together all RAG components
 and integrates with the existing chat API.
 """
 
+import asyncio
 import logging
 from typing import AsyncIterator, Optional
 
@@ -151,14 +152,17 @@ class RAGService:
         Returns (context_chunks, confidence, intent). Shared by query(),
         query_stream(), and explore_symptoms() so retrieval stays identical.
         """
-        # Step 0: Query understanding
+        # Step 0: Query understanding. MeSH resolution only feeds the live-PubMed
+        # fallback (not the main hybrid search), so kick it off concurrently and
+        # let its ~0.5-2s NCBI round-trip overlap retrieval instead of blocking
+        # the request on it first.
         intent = classify_query(question)
-        mesh_term = await self._resolve_mesh_term(question)
-        logger.info(
-            "RAG Step 0: intent=%s, mesh_term=%s", intent.value, mesh_term or "none",
-        )
+        mesh_task = asyncio.create_task(self._resolve_mesh_term(question))
 
-        # Steps 1-2: Hybrid retrieval with RRF
+        # Steps 1-2: Hybrid retrieval with RRF (dense + sparse run in parallel
+        # inside HybridRetriever). Offloaded to a worker thread so the blocking
+        # retrieval overlaps the MeSH HTTP round-trip and keeps the event loop
+        # free for other requests.
         hybrid = HybridRetriever(
             dense_retriever=self._get_dense_retriever(),
             bm25_index=self._get_bm25_index(),
@@ -166,13 +170,17 @@ class RAGService:
             dense_weight=settings.dense_weight,
             sparse_weight=settings.sparse_weight,
         )
-        retrieval_response = hybrid.search(query=question, top_k=top_k * 3)
+        retrieval_response = await asyncio.to_thread(
+            hybrid.search, question, top_k * 3
+        )
 
         # Optional: Graph retrieval + re-fuse
         graph_retriever = self._get_graph_retriever()
         if graph_retriever:
             try:
-                graph_results = graph_retriever.search(question, top_k=top_k)
+                graph_results = await asyncio.to_thread(
+                    graph_retriever.search, question, top_k
+                )
                 if graph_results:
                     retrieval_response.results = reciprocal_rank_fusion(
                         result_lists=[retrieval_response.results, graph_results],
@@ -183,16 +191,25 @@ class RAGService:
             except Exception as e:
                 logger.warning("Graph retrieval failed, continuing without: %s", e)
 
-        # Step 3: Rerank
+        # Step 3: Rerank (CPU-bound cross-encoder, offloaded off the event loop)
         logger.info("RAG Step 3: Reranking %d candidates", len(retrieval_response.results))
-        reranked = self._reranker.rerank(
-            query=question, candidates=retrieval_response.results, top_n=top_k,
+        reranked = await asyncio.to_thread(
+            lambda: self._reranker.rerank(
+                query=question, candidates=retrieval_response.results, top_n=top_k,
+            )
         )
 
         # Step 4: CRAG evaluation
         logger.info("RAG Step 4: CRAG evaluation")
         crag_result = self._crag.evaluate(
             query=question, reranked_results=reranked.results,
+        )
+
+        # MeSH resolution has been running alongside retrieval/rerank — collect
+        # it now; the live-PubMed fallback below needs it.
+        mesh_term = await mesh_task
+        logger.info(
+            "RAG Step 0: intent=%s, mesh_term=%s", intent.value, mesh_term or "none",
         )
 
         confidence = "medium"

@@ -1,6 +1,7 @@
 """Hybrid retriever: orchestrates dense + sparse search with RRF fusion."""
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from app.retrieval.dense_retriever import DenseRetriever
@@ -33,6 +34,24 @@ class HybridRetriever:
         self.dense_weight = dense_weight
         self.sparse_weight = sparse_weight
 
+    def _safe_dense_search(self, query: str, top_k: int) -> list:
+        """Dense retrieval guarded so a transient/unavailable vector DB degrades
+        to sparse-only instead of failing the whole request."""
+        try:
+            return self.dense.search(query=query, top_k=top_k)
+        except Exception as e:
+            logger.warning("Dense retrieval failed, continuing without it: %s", e)
+            return []
+
+    def _safe_sparse_search(self, query: str, top_k: int) -> list:
+        """Sparse (BM25) retrieval guarded so a missing/failed index degrades to
+        dense-only instead of failing the whole request."""
+        try:
+            return self.bm25.search(query=query, top_k=top_k)
+        except Exception as e:
+            logger.warning("Sparse retrieval failed, continuing without it: %s", e)
+            return []
+
     def search(
         self,
         query: str,
@@ -56,24 +75,22 @@ class HybridRetriever:
         d_top_k = dense_top_k or top_k * 2
         s_top_k = sparse_top_k or top_k * 2
 
-        # 1. Dense retrieval (PubMedBERT → Qdrant)
-        # Wrapped so a transient/unavailable vector DB degrades to sparse-only
-        # (and ultimately the CRAG live-PubMed fallback) instead of failing the
-        # whole request — mirrors how graph retrieval is guarded upstream.
-        logger.info("Running dense retrieval (top_k=%d)", d_top_k)
-        try:
-            dense_results = self.dense.search(query=query, top_k=d_top_k)
-        except Exception as e:
-            logger.warning("Dense retrieval failed, continuing without it: %s", e)
-            dense_results = []
-
-        # 2. Sparse retrieval (BM25)
-        logger.info("Running sparse retrieval (top_k=%d)", s_top_k)
-        try:
-            sparse_results = self.bm25.search(query=query, top_k=s_top_k)
-        except Exception as e:
-            logger.warning("Sparse retrieval failed, continuing without it: %s", e)
-            sparse_results = []
+        # 1-2. Dense (PubMedBERT → Qdrant) and sparse (BM25) retrieval run
+        # concurrently. They're fully independent — dense is dominated by the
+        # Qdrant network round-trip, sparse by an in-memory BM25 scan — so
+        # overlapping them roughly halves retrieval latency vs. back-to-back.
+        # Each is wrapped so a transient/unavailable backend degrades to the
+        # other (and ultimately the CRAG live-PubMed fallback) instead of
+        # failing the whole request.
+        logger.info(
+            "Running dense + sparse retrieval in parallel (dense_top_k=%d, sparse_top_k=%d)",
+            d_top_k, s_top_k,
+        )
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            dense_future = executor.submit(self._safe_dense_search, query, d_top_k)
+            sparse_future = executor.submit(self._safe_sparse_search, query, s_top_k)
+            dense_results = dense_future.result()
+            sparse_results = sparse_future.result()
 
         # 3. Fuse with RRF
         fused = reciprocal_rank_fusion(

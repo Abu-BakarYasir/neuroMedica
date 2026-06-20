@@ -34,11 +34,8 @@ class DenseRetriever:
         filter_pmids: Optional[list[str]] = None,
     ) -> list[RetrievalResult]:
         """Embed query and search Qdrant for nearest neighbors."""
-        # Embed the query
-        self._embedder._load_model()
-        query_vector = self._embedder._model.encode(
-            query, normalize_embeddings=True
-        ).tolist()
+        # Embed the query (cached for repeated identical queries)
+        query_vector = self._embedder.encode_query(query)
 
         # Build optional filter
         qdrant_filter = None

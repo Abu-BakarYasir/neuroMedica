@@ -1,6 +1,7 @@
 """Generate embeddings using PubMedBERT via sentence-transformers."""
 
 import logging
+from collections import OrderedDict
 from typing import Optional
 
 from app.ingestion.models import DocumentChunk, EmbeddedChunk
@@ -19,6 +20,11 @@ class PubMedBERTEmbedder:
         self.model_name = model_name or DEFAULT_MODEL
         self.batch_size = batch_size
         self._model = None
+        # Small LRU cache of query -> normalized vector. Repeated identical
+        # queries (common during demos and repeated symptom lookups) skip the
+        # transformer forward pass entirely.
+        self._query_cache: "OrderedDict[str, list[float]]" = OrderedDict()
+        self._query_cache_max = 256
 
     def _load_model(self):
         """Lazy-load the sentence-transformers model."""
@@ -30,6 +36,22 @@ class PubMedBERTEmbedder:
                 "Model loaded. Embedding dimension: %d",
                 self._model.get_sentence_embedding_dimension(),
             )
+
+    def encode_query(self, query: str) -> list[float]:
+        """Encode a single query string to a normalized vector, with a small
+        LRU cache. Used by dense retrieval on the hot path."""
+        cached = self._query_cache.get(query)
+        if cached is not None:
+            self._query_cache.move_to_end(query)
+            return cached
+
+        self._load_model()
+        vector = self._model.encode(query, normalize_embeddings=True).tolist()
+
+        self._query_cache[query] = vector
+        if len(self._query_cache) > self._query_cache_max:
+            self._query_cache.popitem(last=False)
+        return vector
 
     @property
     def dimension(self) -> int:
