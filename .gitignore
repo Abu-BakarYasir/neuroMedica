@@ -76,3 +76,7 @@ backend/models/*.packed.keras
 /rag-*.png
 /verify-ecg-*.png
 /ecg-new-model-*.png
+
+# Corpus-seeding run logs (generated)
+backend/seed_corpus*.log
+backend/dev-server.log
