@@ -30,3 +30,19 @@ class CxrAnalysisResponse(BaseModel):
         "Predictions must be confirmed by a qualified radiologist. "
         "Do not use as the sole basis for diagnosis or treatment."
     )
+
+
+class GradCamResponse(BaseModel):
+    """Grad-CAM explainability overlay for the top predicted pathology."""
+
+    overlay_data_url: str = Field(
+        ..., description="PNG data URL of the heatmap composited over the radiograph"
+    )
+    target_code: str = Field(..., description="Stable key of the pathology the CAM targets")
+    target_name: str = Field(..., description="Human-readable name of that pathology")
+    target_probability: float = Field(..., ge=0.0, le=1.0)
+    disclaimer: str = (
+        "Grad-CAM highlights regions that most influenced the model's top "
+        "prediction. It is an explainability aid, not a diagnostic localization, "
+        "and must be interpreted by a qualified radiologist."
+    )

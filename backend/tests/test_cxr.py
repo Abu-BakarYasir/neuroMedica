@@ -412,6 +412,116 @@ class TestRouteErrorMapping:
 
 
 # ---------------------------------------------------------------------------
+# Grad-CAM explainability (additive — independent of /analyze)
+# ---------------------------------------------------------------------------
+
+class TestGradCamColormap:
+    def test_jet_endpoints_and_shape(self):
+        from app.cxr.gradcam import _jet_colormap
+
+        vals = np.array([[0.0, 0.5, 1.0]], dtype=np.float32)
+        rgb = _jet_colormap(vals)
+        assert rgb.shape == (1, 3, 3)
+        assert rgb.dtype == np.uint8
+        # Jet: low end is blue-dominant, high end is red-dominant.
+        assert rgb[0, 0, 2] > rgb[0, 0, 0]   # value 0.0 -> blue > red
+        assert rgb[0, 2, 0] > rgb[0, 2, 2]   # value 1.0 -> red > blue
+
+    def test_jet_clips_out_of_range(self):
+        from app.cxr.gradcam import _jet_colormap
+
+        rgb = _jet_colormap(np.array([[-2.0, 3.0]], dtype=np.float32))
+        assert rgb.min() >= 0 and rgb.max() <= 255
+
+
+class TestGradCamRouteValidation:
+    def test_empty_file_rejected(self):
+        client = _get_client()
+        resp = client.post("/api/cxr/gradcam", files={"file": ("x.png", b"", "image/png")})
+        assert resp.status_code == 400
+        assert "empty" in resp.json()["detail"].lower()
+
+    def test_text_content_type_rejected(self):
+        client = _get_client()
+        resp = client.post(
+            "/api/cxr/gradcam",
+            files={"file": ("notes.txt", b"hello", "text/plain")},
+        )
+        assert resp.status_code == 400
+
+    def test_missing_file_part_returns_422(self):
+        client = _get_client()
+        resp = client.post("/api/cxr/gradcam", data={"foo": "bar"})
+        assert resp.status_code == 422
+
+
+class TestGradCamRouteErrorMapping:
+    """Patch the generator so the route's exception → status mapping is
+    exercised without depending on the model being present."""
+
+    def test_missing_model_returns_503(self):
+        from unittest.mock import patch
+
+        client = _get_client()
+        with patch("app.api.cxr.cxr_gradcam.generate", side_effect=FileNotFoundError("no model")):
+            resp = client.post(
+                "/api/cxr/gradcam",
+                files={"file": ("x.png", _rgb_png(), "image/png")},
+            )
+        assert resp.status_code == 503
+
+    def test_undecodable_image_returns_400(self):
+        from unittest.mock import patch
+
+        from app.cxr.predictor import CxrImageError
+
+        client = _get_client()
+        with patch("app.api.cxr.cxr_gradcam.generate", side_effect=CxrImageError("bad image")):
+            resp = client.post(
+                "/api/cxr/gradcam",
+                files={"file": ("x.png", _rgb_png(), "image/png")},
+            )
+        assert resp.status_code == 400
+        assert "bad image" in resp.json()["detail"]
+
+    def test_unexpected_error_returns_500(self):
+        from unittest.mock import patch
+
+        client = _get_client()
+        with patch("app.api.cxr.cxr_gradcam.generate", side_effect=RuntimeError("boom")):
+            resp = client.post(
+                "/api/cxr/gradcam",
+                files={"file": ("x.png", _rgb_png(), "image/png")},
+            )
+        assert resp.status_code == 500
+
+
+@requires_model
+class TestGradCamContract:
+    def test_returns_overlay_data_url_and_valid_target(self):
+        from app.cxr import gradcam
+        from app.cxr.labels import PATHOLOGIES
+
+        result = gradcam.generate(_rgb_png())
+        assert result.overlay_data_url.startswith("data:image/png;base64,")
+        assert 0.0 <= result.target_probability <= 1.0
+        codes = {p.code for p in PATHOLOGIES}
+        assert result.target_code in codes
+
+    def test_overlay_decodes_to_square_rgb_image(self):
+        import base64
+
+        from app.cxr import gradcam
+        from app.cxr.transforms import IMAGE_SIZE
+
+        result = gradcam.generate(_rgb_png())
+        b64 = result.overlay_data_url.split(",", 1)[1]
+        img = Image.open(io.BytesIO(base64.b64decode(b64)))
+        assert img.mode == "RGB"
+        assert img.size == (IMAGE_SIZE, IMAGE_SIZE)
+
+
+# ---------------------------------------------------------------------------
 # Pydantic schemas
 # ---------------------------------------------------------------------------
 
@@ -444,3 +554,24 @@ class TestSchemas:
             detected_count=0, top_finding="Nodule", findings=[],
         )
         assert "decision support" in resp.disclaimer
+
+    def test_gradcam_response_has_default_disclaimer(self):
+        from app.models.cxr import GradCamResponse
+
+        resp = GradCamResponse(
+            overlay_data_url="data:image/png;base64,AAAA",
+            target_code="Cardiomegaly", target_name="Cardiomegaly",
+            target_probability=0.7,
+        )
+        assert "Grad-CAM" in resp.disclaimer
+
+    def test_gradcam_probability_bounds_enforced(self):
+        from pydantic import ValidationError
+
+        from app.models.cxr import GradCamResponse
+
+        with pytest.raises(ValidationError):
+            GradCamResponse(
+                overlay_data_url="data:image/png;base64,AAAA",
+                target_code="Mass", target_name="Mass", target_probability=1.5,
+            )
