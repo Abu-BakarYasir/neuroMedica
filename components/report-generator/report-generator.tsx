@@ -5,27 +5,35 @@ import {
   FileText,
   Loader2,
   Download,
+  Printer,
   Save,
   Trash2,
   ChevronUp,
   ChevronDown,
   X,
   AlertCircle,
+  User,
+  ArrowLeft,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
 import {
-  getDraft,
-  removeItem,
-  moveItem,
-  clearDraft,
-  DRAFT_EVENT,
-} from "@/lib/report/draft";
-import { createReport, listReports, deleteReport } from "@/lib/report/service";
+  listReports,
+  deleteReport,
+  updateReport,
+} from "@/lib/report/service";
+import { reorder } from "@/lib/report/serialize";
 import { listUnifiedPatients } from "@/lib/patients/service";
+import { exportPdf, printNode } from "@/lib/report/pdf";
 import type { ReportItem, ReportRow } from "@/lib/report/types";
 import type { UnifiedPatient } from "@/lib/patients/types";
+import {
+  ReportDocument,
+  type ReportDocumentData,
+  type ReportPatient,
+} from "./report-document";
 
 const KIND_LABEL: Record<ReportItem["kind"], string> = {
   ecg: "ECG",
@@ -41,100 +49,37 @@ function fmtDate(v?: string | null) {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleString();
 }
 
-/** Minimal markdown-lite → React (bold, bullets) for the printable report. */
-function renderMd(text: string) {
-  return text.split("\n").map((line, i) => {
-    const bullet = /^\s*[-*]\s+/.test(line);
-    const content = line.replace(/^\s*[-*]\s+/, "");
-    const parts = content.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
-      p.startsWith("**") && p.endsWith("**") ? (
-        <strong key={j}>{p.slice(2, -2)}</strong>
-      ) : (
-        <span key={j}>{p}</span>
-      ),
-    );
-    return (
-      <div key={i} style={{ paddingLeft: bullet ? 16 : 0 }}>
-        {bullet ? "• " : ""}
-        {parts}
-      </div>
-    );
-  });
+function slug(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "report";
 }
 
-async function exportPdf(node: HTMLElement, filename: string) {
-  const html2canvas = (await import("html2canvas")).default;
-  const { jsPDF } = await import("jspdf");
-  const canvas = await html2canvas(node, { scale: 2, backgroundColor: "#ffffff" });
-  const img = canvas.toDataURL("image/png");
-  const pdf = new jsPDF({ unit: "pt", format: "a4" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  const imgH = (canvas.height * pageW) / canvas.width;
-  let heightLeft = imgH;
-  let position = 0;
-  pdf.addImage(img, "PNG", 0, position, pageW, imgH);
-  heightLeft -= pageH;
-  while (heightLeft > 0) {
-    position -= pageH;
-    pdf.addPage();
-    pdf.addImage(img, "PNG", 0, position, pageW, imgH);
-    heightLeft -= pageH;
-  }
-  pdf.save(filename);
-}
-
-interface ReportView {
-  title: string;
-  patientName: string | null;
-  dateStr: string;
-  items: ReportItem[];
-  notes: string | null;
+function normaliseName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 export function ReportGenerator() {
-  const [draft, setDraft] = useState<ReportItem[]>([]);
-  const [title, setTitle] = useState("");
-  const [notes, setNotes] = useState("");
-  const [patientName, setPatientName] = useState("");
-  const [patients, setPatients] = useState<UnifiedPatient[]>([]);
-
-  const [saved, setSaved] = useState<ReportRow[]>([]);
+  const [reports, setReports] = useState<ReportRow[]>([]);
   const [savedNote, setSavedNote] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewing, setViewing] = useState<ReportRow | null>(null);
+  const [patients, setPatients] = useState<UnifiedPatient[]>([]);
+  const [doctorName, setDoctorName] = useState<string | null>(null);
 
-  const draftPrintRef = useRef<HTMLDivElement>(null);
-  const viewPrintRef = useRef<HTMLDivElement>(null);
+  // Open report + its editable copy
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editItems, setEditItems] = useState<ReportItem[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
-  // Offscreen printable nodes use new Date() and localStorage — render them
-  // only after mount to avoid SSR/client hydration mismatch.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const docRef = useRef<HTMLDivElement>(null);
 
-  // Live-sync the draft from localStorage.
-  useEffect(() => {
-    const sync = () => setDraft(getDraft());
-    sync();
-    window.addEventListener(DRAFT_EVENT, sync);
-    window.addEventListener("storage", sync);
-    return () => {
-      window.removeEventListener(DRAFT_EVENT, sync);
-      window.removeEventListener("storage", sync);
-    };
-  }, []);
-
-  useEffect(() => {
-    listUnifiedPatients().then(setPatients).catch(() => {});
-  }, []);
-
-  const loadSaved = useCallback(async () => {
+  const loadReports = useCallback(async () => {
     setSavedNote(null);
     try {
-      setSaved(await listReports());
+      setReports(await listReports());
     } catch (e) {
-      setSaved([]);
+      setReports([]);
       setSavedNote(
         e instanceof Error && /reports/.test(e.message)
           ? "Saved reports are unavailable — the reports table hasn't been created yet."
@@ -146,39 +91,90 @@ export function ReportGenerator() {
   }, []);
 
   useEffect(() => {
-    void loadSaved();
-  }, [loadSaved]);
+    void loadReports();
+    listUnifiedPatients().then(setPatients).catch(() => {});
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => setDoctorName(data.user?.email ?? null))
+      .catch(() => {});
+  }, [loadReports]);
 
-  const patientNames = useMemo(
-    () =>
-      patients.map((p) => (p.source === "manual" ? p.row.name : p.name)),
-    [patients],
+  const openReport = (r: ReportRow) => {
+    setOpenId(r.id);
+    setEditTitle(r.title);
+    setEditNotes(r.notes ?? "");
+    setEditItems(r.items ?? []);
+    setDirty(false);
+    setError(null);
+  };
+
+  const closeReport = () => {
+    setOpenId(null);
+    setDirty(false);
+  };
+
+  const openRow = useMemo(
+    () => reports.find((r) => r.id === openId) ?? null,
+    [reports, openId],
   );
 
-  const canSave = title.trim().length > 0 && draft.length > 0 && !saving;
+  // Resolve full patient details (dob/sex/phone) for the open report.
+  const resolvedPatient: ReportPatient = useMemo(() => {
+    if (!openRow) return { name: null };
+    const manual = openRow.patient_id
+      ? patients.find((p) => p.source === "manual" && p.row.id === openRow.patient_id)
+      : patients.find(
+          (p) =>
+            p.source === "manual" &&
+            normaliseName(p.row.name) === normaliseName(openRow.patient_name ?? ""),
+        );
+    if (manual && manual.source === "manual") {
+      return {
+        name: manual.row.name,
+        dob: manual.row.date_of_birth,
+        sex: manual.row.sex,
+        phone: manual.row.phone,
+      };
+    }
+    return { name: openRow.patient_name };
+  }, [openRow, patients]);
+
+  const docData: ReportDocumentData | null = openRow
+    ? {
+        reportId: openRow.id.slice(0, 8).toUpperCase(),
+        title: editTitle.trim() || "Untitled report",
+        patient: resolvedPatient,
+        items: editItems,
+        impression: editNotes,
+        createdAt: openRow.created_at,
+        doctorName,
+      }
+    : null;
+
+  const onReorder = (id: string, dir: "up" | "down") => {
+    setEditItems((items) => reorder(items, id, dir));
+    setDirty(true);
+  };
+
+  const onRemoveItem = (id: string) => {
+    setEditItems((items) => items.filter((it) => it.id !== id));
+    setDirty(true);
+  };
 
   const onSave = async () => {
-    if (!canSave) return;
+    if (!openRow || saving) return;
     setSaving(true);
     setError(null);
     try {
-      const manual = patients.find(
-        (p) => p.source === "manual" && p.row.name === patientName,
-      );
-      await createReport({
-        title: title.trim(),
-        patient_name: patientName || null,
-        patient_id: manual && manual.source === "manual" ? manual.row.id : null,
-        notes: notes || null,
-        items: draft,
+      await updateReport(openRow.id, {
+        title: editTitle.trim() || "Untitled report",
+        notes: editNotes,
+        items: editItems,
       });
-      clearDraft();
-      setTitle("");
-      setNotes("");
-      setPatientName("");
-      await loadSaved();
+      setDirty(false);
+      await loadReports();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save report.");
+      setError(e instanceof Error ? e.message : "Failed to save changes.");
     } finally {
       setSaving(false);
     }
@@ -188,252 +184,245 @@ export function ReportGenerator() {
     if (!confirm("Delete this report? This cannot be undone.")) return;
     try {
       await deleteReport(id);
-      if (viewing?.id === id) setViewing(null);
-      await loadSaved();
+      if (openId === id) closeReport();
+      await loadReports();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to delete report.");
     }
   };
 
-  const draftView: ReportView = {
-    title: title.trim() || "Untitled report",
-    patientName: patientName || null,
-    dateStr: new Date().toLocaleString(),
-    items: draft,
-    notes: notes || null,
-  };
+  // ── List view ────────────────────────────────────────────────────────────
+  if (!openRow || !docData) {
+    return (
+      <div className="w-full max-w-[1100px] mx-auto px-2 pb-10">
+        <Header />
+        {error && <ErrorBox text={error} />}
 
-  const viewingView: ReportView | null = viewing
-    ? {
-        title: viewing.title,
-        patientName: viewing.patient_name,
-        dateStr: fmtDate(viewing.created_at),
-        items: viewing.items ?? [],
-        notes: viewing.notes,
-      }
-    : null;
-
-  const slug = (s: string) =>
-    s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "report";
-
-  return (
-    <div className="w-full max-w-[1100px] mx-auto px-2 pb-10">
-      {/* Header */}
-      <div className="mb-6 flex items-start gap-3">
-        <div className="w-11 h-11 rounded-[12px] bg-gradient-to-br from-neuro-primary/15 to-neuro-primary/5 flex items-center justify-center flex-shrink-0">
-          <FileText className="h-5 w-5 text-neuro-primary" />
-        </div>
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
-            Report Generator
-          </h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5">
-            Assemble outputs captured from ECG, Chest X-ray, Medical Q&amp;A, and
-            Symptom Explorer into a structured report, then save or export to PDF.
-          </p>
-        </div>
-      </div>
-
-      {error && (
-        <div className="mb-4 flex items-start gap-3 rounded-[14px] border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/50 dark:bg-rose-950/40">
-          <AlertCircle className="h-4 w-4 text-rose-600 mt-0.5 flex-shrink-0 dark:text-rose-400" />
-          <p className="text-[12px] text-rose-700 dark:text-rose-300">{error}</p>
-        </div>
-      )}
-
-      {/* Compose */}
-      <div className="rounded-[16px] border border-border bg-card p-4 shadow-sm space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="text-[12px] text-muted-foreground mb-1 block">Report title</label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Cardiopulmonary workup — J. Doe"
-            />
-          </div>
-          <div>
-            <label className="text-[12px] text-muted-foreground mb-1 block">Patient (optional)</label>
-            <select
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-              className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="">Unassigned</option>
-              {patientNames.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="text-[12px] text-muted-foreground mb-1 block">Clinical notes (optional)</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            placeholder="Add context, impression, or plan…"
-            className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neuro-primary/30"
-          />
-        </div>
-
-        {/* Draft items */}
-        <div>
-          <div className="text-[12px] text-muted-foreground mb-2">
-            Captured sections ({draft.length})
-          </div>
-          {draft.length === 0 ? (
-            <div className="rounded-[12px] border border-dashed border-border bg-muted p-5 text-center text-[12px] text-muted-foreground">
-              No sections yet. Open ECG, Chest X-ray, Medical Q&amp;A, or Symptom
-              Explorer, run an analysis, and click <strong>Add to report</strong>.
+        <div className="mt-2">
+          <h2 className="text-[15px] font-semibold text-[#212121] mb-3">Saved reports</h2>
+          {savedNote ? (
+            <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800">
+              {savedNote}
+            </div>
+          ) : reports.length === 0 ? (
+            <div className="rounded-[12px] border border-dashed border-[#E5E5E5] bg-[#FAFAFA] p-8 text-center text-[12px] text-[#767676]">
+              No reports yet. Run an analysis in ECG, Chest X-ray, Medical Q&amp;A, or
+              Symptom Explorer and click <strong>Add to report</strong> to assign it to a
+              patient.
             </div>
           ) : (
             <div className="space-y-2">
-              {draft.map((it, idx) => (
+              {reports.map((r) => (
                 <div
-                  key={it.id}
-                  className="flex items-start gap-2 rounded-[12px] border border-border bg-card p-3"
+                  key={r.id}
+                  className="flex items-center gap-3 rounded-[12px] border border-[#EDEDED] bg-white p-3 hover:border-neuro-primary/40 transition-colors"
                 >
-                  <span className="text-[10px] uppercase tracking-wide font-semibold text-neuro-primary bg-neuro-primary/10 rounded px-1.5 py-0.5 mt-0.5 flex-shrink-0">
-                    {KIND_LABEL[it.kind]}
-                  </span>
+                  <div className="h-9 w-9 rounded-[10px] bg-neuro-primary/10 text-neuro-primary flex items-center justify-center flex-shrink-0">
+                    <FileText className="h-4 w-4" />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-foreground truncate">
-                      {it.title}
+                    <div className="text-[13px] font-medium text-[#212121] truncate">
+                      {r.title}
                     </div>
-                    <div className="text-[11px] text-muted-foreground line-clamp-2 whitespace-pre-wrap">
-                      {it.markdown.replace(/\*\*/g, "")}
+                    <div className="text-[11px] text-[#767676] flex items-center gap-1.5 flex-wrap">
+                      {r.patient_name && (
+                        <span className="inline-flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          {r.patient_name}
+                        </span>
+                      )}
+                      <span>· {fmtDate(r.created_at)}</span>
+                      <span>
+                        · {(r.items?.length ?? 0)} section
+                        {(r.items?.length ?? 0) === 1 ? "" : "s"}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <IconBtn
-                      label="Move up"
-                      disabled={idx === 0}
-                      onClick={() => moveItem(it.id, "up")}
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </IconBtn>
-                    <IconBtn
-                      label="Move down"
-                      disabled={idx === draft.length - 1}
-                      onClick={() => moveItem(it.id, "down")}
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </IconBtn>
-                    <IconBtn label="Remove" onClick={() => removeItem(it.id)}>
-                      <X className="h-4 w-4" />
-                    </IconBtn>
-                  </div>
+                  <Button variant="outline" size="sm" onClick={() => openReport(r)}>
+                    Open
+                  </Button>
+                  <IconBtn label="Delete report" onClick={() => onDelete(r.id)}>
+                    <Trash2 className="h-4 w-4 text-rose-600" />
+                  </IconBtn>
                 </div>
               ))}
             </div>
           )}
         </div>
+      </div>
+    );
+  }
 
-        <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-          {draft.length > 0 && (
-            <Button variant="ghost" onClick={() => clearDraft()} className="text-muted-foreground">
-              <Trash2 className="h-4 w-4" />
-              Clear draft
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            disabled={draft.length === 0}
-            onClick={() =>
-              draftPrintRef.current &&
-              exportPdf(draftPrintRef.current, `${slug(draftView.title)}.pdf`)
-            }
-          >
-            <Download className="h-4 w-4" />
-            Export PDF
-          </Button>
-          <Button
-            onClick={onSave}
-            disabled={!canSave}
-            className="bg-neuro-primary text-white hover:bg-neuro-primary/90"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save report
-          </Button>
-        </div>
+  // ── Editor / preview view ────────────────────────────────────────────────
+  return (
+    <div className="w-full max-w-[1200px] mx-auto px-2 pb-10">
+      {/* Toolbar */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={closeReport} className="gap-1.5">
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+        <div className="flex-1" />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => docRef.current && void exportPdf(docRef.current, `${slug(editTitle)}.pdf`)}
+        >
+          <Download className="h-4 w-4" />
+          Export PDF
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => docRef.current && printNode(docRef.current, editTitle)}
+        >
+          <Printer className="h-4 w-4" />
+          Print
+        </Button>
+        <Button
+          size="sm"
+          onClick={onSave}
+          disabled={saving || !dirty}
+          className="bg-neuro-primary text-white hover:bg-neuro-primary/90"
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {dirty ? "Save changes" : "Saved"}
+        </Button>
       </div>
 
-      {/* Saved reports */}
-      <div className="mt-6">
-        <h2 className="text-[15px] font-semibold text-foreground mb-3">Saved reports</h2>
-        {savedNote ? (
-          <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
-            {savedNote}
-          </div>
-        ) : saved.length === 0 ? (
-          <p className="text-[12px] text-muted-foreground">No saved reports yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {saved.map((r) => (
-              <div
-                key={r.id}
-                className="flex items-center gap-3 rounded-[12px] border border-border bg-card p-3"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-foreground truncate">
-                    {r.title}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {fmtDate(r.created_at)}
-                    {r.patient_name ? ` · ${r.patient_name}` : ""} ·{" "}
-                    {(r.items?.length ?? 0)} section
-                    {(r.items?.length ?? 0) === 1 ? "" : "s"}
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setViewing(r)}>
-                  Open
-                </Button>
-                <IconBtn label="Delete report" onClick={() => onDelete(r.id)}>
-                  <Trash2 className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                </IconBtn>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {error && <ErrorBox text={error} />}
 
-      {/* Viewing a saved report */}
-      {viewingView && (
-        <div className="mt-6 rounded-[16px] border border-border bg-card p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[15px] font-semibold text-foreground">{viewingView.title}</h3>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  viewPrintRef.current &&
-                  exportPdf(viewPrintRef.current, `${slug(viewingView.title)}.pdf`)
-                }
-              >
-                <Download className="h-4 w-4" />
-                Export PDF
-              </Button>
-              <IconBtn label="Close" onClick={() => setViewing(null)}>
-                <X className="h-4 w-4" />
-              </IconBtn>
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5">
+        {/* Edit controls */}
+        <div className="space-y-4 lg:sticky lg:top-2 lg:self-start">
+          <div className="rounded-[14px] border border-[#E5E5E5] bg-white p-4 space-y-3">
+            <div>
+              <label className="text-[12px] text-[#525252] mb-1 block">Report title</label>
+              <Input
+                value={editTitle}
+                onChange={(e) => {
+                  setEditTitle(e.target.value);
+                  setDirty(true);
+                }}
+              />
+            </div>
+            <div>
+              <label className="text-[12px] text-[#525252] mb-1 block">
+                Impression / conclusion
+              </label>
+              <textarea
+                value={editNotes}
+                onChange={(e) => {
+                  setEditNotes(e.target.value);
+                  setDirty(true);
+                }}
+                rows={5}
+                placeholder="Summarize the impression, plan, or follow-up…"
+                className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neuro-primary/30"
+              />
+            </div>
+            <div className="text-[11px] text-[#767676] flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5" />
+              {resolvedPatient.name || "Unassigned"}
             </div>
           </div>
-          <ReportBody view={viewingView} />
-        </div>
-      )}
 
-      {/* Offscreen printable nodes for PDF capture (client-only) */}
-      {mounted && (
-        <div style={{ position: "fixed", left: -10000, top: 0 }} aria-hidden>
-          <Printable innerRef={draftPrintRef} view={draftView} />
-          {viewingView && <Printable innerRef={viewPrintRef} view={viewingView} />}
+          <div className="rounded-[14px] border border-[#E5E5E5] bg-white p-4">
+            <div className="text-[12px] text-[#525252] mb-2">
+              Sections ({editItems.length})
+            </div>
+            {editItems.length === 0 ? (
+              <p className="text-[12px] text-[#767676]">No sections.</p>
+            ) : (
+              <div className="space-y-2">
+                {editItems.map((it, idx) => (
+                  <div
+                    key={it.id}
+                    className="flex items-start gap-2 rounded-[10px] border border-[#EDEDED] bg-white p-2.5"
+                  >
+                    <span className="text-[9px] uppercase tracking-wide font-semibold text-neuro-primary bg-neuro-primary/10 rounded px-1.5 py-0.5 mt-0.5 flex-shrink-0">
+                      {KIND_LABEL[it.kind]}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-medium text-[#212121] truncate">
+                        {it.title}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      <IconBtn
+                        label="Move up"
+                        disabled={idx === 0}
+                        onClick={() => onReorder(it.id, "up")}
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </IconBtn>
+                      <IconBtn
+                        label="Move down"
+                        disabled={idx === editItems.length - 1}
+                        onClick={() => onReorder(it.id, "down")}
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </IconBtn>
+                      <IconBtn label="Remove" onClick={() => onRemoveItem(it.id)}>
+                        <X className="h-4 w-4" />
+                      </IconBtn>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(openRow.id)}
+            className="text-rose-600 hover:bg-rose-50 hover:text-rose-700 w-full justify-start"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete report
+          </Button>
         </div>
-      )}
+
+        {/* Live document preview */}
+        <div className="min-w-0">
+          <div className="rounded-[14px] border border-[#E5E5E5] bg-[#F3F4F6] p-3 sm:p-5 overflow-x-auto">
+            <div
+              className="shadow-lg rounded-sm overflow-hidden mx-auto"
+              style={{ width: "fit-content" }}
+            >
+              <ReportDocument ref={docRef} data={docData} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Header() {
+  return (
+    <div className="mb-6 flex items-start gap-3">
+      <div className="w-11 h-11 rounded-[12px] bg-gradient-to-br from-neuro-primary/15 to-neuro-primary/5 flex items-center justify-center flex-shrink-0">
+        <FileText className="h-5 w-5 text-neuro-primary" />
+      </div>
+      <div>
+        <h1 className="text-xl sm:text-2xl font-semibold text-[#212121]">Report Generator</h1>
+        <p className="text-[13px] text-[#525252] mt-0.5">
+          View, edit, and export the reports you&apos;ve assigned to patients. Add results
+          from ECG, Chest X-ray, Medical Q&amp;A, and Symptom Explorer using
+          <strong> Add to report</strong>.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ErrorBox({ text }: { text: string }) {
+  return (
+    <div className="mb-4 flex items-start gap-3 rounded-[14px] border border-rose-200 bg-rose-50 p-4">
+      <AlertCircle className="h-4 w-4 text-rose-600 mt-0.5 flex-shrink-0" />
+      <p className="text-[12px] text-rose-700">{text}</p>
     </div>
   );
 }
@@ -456,79 +445,9 @@ function IconBtn({
       title={label}
       onClick={onClick}
       disabled={disabled}
-      className="p-1.5 rounded-md text-muted-foreground hover:bg-muted disabled:opacity-30"
+      className="p-1.5 rounded-md text-[#767676] hover:bg-[#F2F2F2] disabled:opacity-30"
     >
       {children}
     </button>
-  );
-}
-
-/** On-screen report body (used in the "Open" panel). */
-function ReportBody({ view }: { view: ReportView }) {
-  return (
-    <div className="space-y-4">
-      <div className="text-[12px] text-muted-foreground">
-        {view.patientName ? `Patient: ${view.patientName} · ` : ""}
-        {view.dateStr}
-      </div>
-      {view.items.map((it) => (
-        <div key={it.id}>
-          <div className="text-[13px] font-semibold text-foreground mb-1">{it.title}</div>
-          <div className="text-[12px] text-muted-foreground leading-relaxed">
-            {renderMd(it.markdown)}
-          </div>
-        </div>
-      ))}
-      {view.notes && (
-        <div>
-          <div className="text-[13px] font-semibold text-foreground mb-1">Clinical notes</div>
-          <div className="text-[12px] text-muted-foreground whitespace-pre-wrap">{view.notes}</div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Print-styled node (plain colors) captured by html2canvas. */
-function Printable({
-  innerRef,
-  view,
-}: {
-  innerRef: React.RefObject<HTMLDivElement | null>;
-  view: ReportView;
-}) {
-  return (
-    <div
-      ref={innerRef}
-      style={{
-        width: 760,
-        padding: 40,
-        background: "#ffffff",
-        color: "#111111",
-        fontFamily: "Arial, Helvetica, sans-serif",
-        fontSize: 13,
-        lineHeight: 1.5,
-      }}
-    >
-      <div style={{ borderBottom: "2px solid #111", paddingBottom: 10, marginBottom: 16 }}>
-        <div style={{ fontSize: 20, fontWeight: 700 }}>{view.title}</div>
-        <div style={{ fontSize: 12, color: "#555", marginTop: 4 }}>
-          Neuro Medica · {view.patientName ? `Patient: ${view.patientName} · ` : ""}
-          {view.dateStr}
-        </div>
-      </div>
-      {view.items.map((it) => (
-        <div key={it.id} style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{it.title}</div>
-          <div>{renderMd(it.markdown)}</div>
-        </div>
-      ))}
-      {view.notes && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Clinical notes</div>
-          <div style={{ whiteSpace: "pre-wrap" }}>{view.notes}</div>
-        </div>
-      )}
-    </div>
   );
 }

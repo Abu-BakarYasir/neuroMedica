@@ -20,6 +20,8 @@ export function CxrAnalyzer() {
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // Persistent base64 copy of the image so it survives into the saved report.
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,6 +36,13 @@ export function CxrAnalyzer() {
       if (prev) URL.revokeObjectURL(prev);
       return URL.createObjectURL(file);
     });
+    // Capture a data URL in the background for the report payload.
+    setImageDataUrl(null);
+    const reader = new FileReader();
+    reader.onload = () =>
+      setImageDataUrl(typeof reader.result === "string" ? reader.result : null);
+    reader.onerror = () => setImageDataUrl(null);
+    reader.readAsDataURL(file);
     try {
       const data = await analyzeXray(file);
       setResult(data);
@@ -152,7 +161,7 @@ export function CxrAnalyzer() {
       {/* Add to report */}
       {result && !isLoading && (
         <div className="mt-6 flex justify-end">
-          <AddToReportButton build={() => cxrToItem(result)} />
+          <AddToReportButton build={() => cxrToItem(result, imageDataUrl)} />
         </div>
       )}
 

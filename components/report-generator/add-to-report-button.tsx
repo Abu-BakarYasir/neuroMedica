@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { FilePlus2, Check } from "lucide-react";
+import { FilePlus2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { addItem } from "@/lib/report/draft";
+import { AssignToReportDialog } from "./assign-to-report-dialog";
 import type { ReportItem } from "@/lib/report/types";
 
 /**
- * Small reusable "Add to report" button. Each module passes a `build` callback
- * that serializes its current result into a ReportItem when clicked.
+ * "Add to report" button. Each module passes a `build` callback that serializes
+ * its current result into a ReportItem. Clicking opens a popup to pick (or
+ * create) a patient and assign the result to a new or existing report.
  */
 export function AddToReportButton({
   build,
@@ -20,32 +21,20 @@ export function AddToReportButton({
   className?: string;
   label?: string;
 }) {
-  const [added, setAdded] = useState(false);
-
-  const onClick = () => {
-    addItem(build());
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 2000);
-  };
+  const [open, setOpen] = useState(false);
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      onClick={onClick}
-      className={className}
-    >
-      {added ? (
-        <>
-          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-          Added
-        </>
-      ) : (
-        <>
-          <FilePlus2 className="h-4 w-4" />
-          {label}
-        </>
-      )}
-    </Button>
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setOpen(true)}
+        className={className}
+      >
+        <FilePlus2 className="h-4 w-4" />
+        {label}
+      </Button>
+      <AssignToReportDialog open={open} onOpenChange={setOpen} build={build} />
+    </>
   );
 }

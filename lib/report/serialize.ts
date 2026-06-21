@@ -5,7 +5,14 @@ import type { EcgAnalysisResponse } from "@/lib/ecg/types";
 import type { CxrAnalysisResponse } from "@/lib/cxr/types";
 import type { SymptomExploreResponse } from "@/lib/symptoms/types";
 import type { CitationItem } from "@/lib/chatbot/types";
-import type { ReportItem, ReportItemKind } from "./types";
+import type {
+  CxrReportData,
+  EcgReportData,
+  EcgWaveform,
+  ReportItem,
+  ReportItemData,
+  ReportItemKind,
+} from "./types";
 
 function newId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -18,18 +25,48 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function makeItem(kind: ReportItemKind, title: string, markdown: string): ReportItem {
-  return { id: newId(), kind, title, markdown: markdown.trim(), createdAt: nowIso() };
+function makeItem(
+  kind: ReportItemKind,
+  title: string,
+  markdown: string,
+  data?: ReportItemData,
+): ReportItem {
+  return {
+    id: newId(),
+    kind,
+    title,
+    markdown: markdown.trim(),
+    createdAt: nowIso(),
+    ...(data ? { data } : {}),
+  };
 }
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
+/** One representative beat per detected class (capped), for waveform graphs. */
+function pickEcgWaveforms(result: EcgAnalysisResponse, max = 6): EcgWaveform[] {
+  const out: EcgWaveform[] = [];
+  const seen = new Set<string>();
+  for (const beat of result.beats) {
+    if (seen.has(beat.predicted_class)) continue;
+    if (!Array.isArray(beat.waveform) || beat.waveform.length === 0) continue;
+    seen.add(beat.predicted_class);
+    out.push({
+      code: beat.predicted_class,
+      label: beat.predicted_label,
+      samples: beat.waveform,
+    });
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
 export function ecgToItem(result: EcgAnalysisResponse): ReportItem {
   const s = result.summary;
-  const dist = Object.entries(s.class_percentages)
+  const distribution = Object.entries(s.class_percentages)
     .filter(([, p]) => p > 0)
-    .map(([code, p]) => `- ${code}: ${p}%`)
-    .join("\n");
+    .map(([code, p]) => ({ code, pct: p }));
+  const dist = distribution.map((d) => `- ${d.code}: ${d.pct}%`).join("\n");
   const md = [
     `**Dominant rhythm:** ${s.dominant_label} (${s.dominant_class})`,
     `**Beats analyzed:** ${s.total_beats}`,
@@ -40,10 +77,24 @@ export function ecgToItem(result: EcgAnalysisResponse): ReportItem {
     "Class distribution:",
     dist,
   ].join("\n");
-  return makeItem("ecg", "ECG Signal Analysis", md);
+  const data: EcgReportData = {
+    dominantLabel: s.dominant_label,
+    dominantCode: s.dominant_class,
+    totalBeats: s.total_beats,
+    abnormalBeats: s.abnormal_beats,
+    abnormalPercentage: s.abnormal_percentage,
+    meanConfidence: s.mean_confidence,
+    sourceFormat: result.source_format,
+    classDistribution: distribution,
+    waveforms: pickEcgWaveforms(result),
+  };
+  return makeItem("ecg", "ECG Signal Analysis", md, data);
 }
 
-export function cxrToItem(result: CxrAnalysisResponse): ReportItem {
+export function cxrToItem(
+  result: CxrAnalysisResponse,
+  imageDataUrl?: string | null,
+): ReportItem {
   const detected = result.findings.filter((f) => f.detected);
   const lines = (detected.length ? detected : result.findings.slice(0, 3))
     .map((f) => `- ${f.name}: ${pct(f.probability)}${f.detected ? " (detected)" : ""}`)
@@ -55,7 +106,19 @@ export function cxrToItem(result: CxrAnalysisResponse): ReportItem {
     "",
     lines,
   ].join("\n");
-  return makeItem("cxr", "Chest X-ray Analysis", md);
+  const data: CxrReportData = {
+    abnormalProbability: result.abnormal_probability,
+    predictedAbnormal: result.predicted_abnormal,
+    topFinding: result.top_finding,
+    detectedCount: result.detected_count,
+    imageDataUrl: imageDataUrl ?? null,
+    findings: result.findings.map((f) => ({
+      name: f.name,
+      probability: f.probability,
+      detected: f.detected,
+    })),
+  };
+  return makeItem("cxr", "Chest X-ray Analysis", md, data);
 }
 
 export function symptomToItem(result: SymptomExploreResponse): ReportItem {

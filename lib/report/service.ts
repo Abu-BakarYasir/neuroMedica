@@ -46,6 +46,28 @@ export async function createReport(input: ReportInput): Promise<ReportRow> {
   return data as ReportRow;
 }
 
+export async function updateReport(
+  id: string,
+  patch: Partial<Pick<ReportInput, "title" | "notes" | "items">>,
+): Promise<ReportRow> {
+  const supabase = createClient();
+
+  const payload: Record<string, unknown> = {};
+  if (patch.title !== undefined) payload.title = patch.title.trim();
+  if (patch.notes !== undefined) payload.notes = patch.notes?.trim() || null;
+  if (patch.items !== undefined) payload.items = patch.items;
+
+  const { data, error } = await supabase
+    .from("reports")
+    .update(payload)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as ReportRow;
+}
+
 export async function deleteReport(id: string): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase.from("reports").delete().eq("id", id);
