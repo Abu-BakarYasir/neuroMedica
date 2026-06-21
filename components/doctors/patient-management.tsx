@@ -385,9 +385,9 @@ export function PatientManagement() {
       // and issued a new tunnel). Surface that as a clear, actionable message
       // instead of the browser's cryptic "Failed to fetch".
 
-      let apiUrl = configData.ngrok_url;
-      let base = apiUrl.trim().replace(/\/+$/, "");
-      let cleanUrl = base + (base.endsWith("/scan") ? "/" : "/scan/");
+      const apiUrl = configData.ngrok_url;
+      const base = apiUrl.trim().replace(/\/+$/, "");
+      const cleanUrl = base + (base.endsWith("/scan") ? "/" : "/scan/");
 
       const formData = new FormData();
       formData.append("file", file);
@@ -398,6 +398,10 @@ export function PatientManagement() {
         response = await fetch(cleanUrl, {
           method: "POST",
           body: formData,
+          // ngrok's free tier serves an HTML interstitial to "browser" requests
+          // unless this header is present, which breaks the JSON response.
+          // (Don't set Content-Type — the browser must set the multipart boundary.)
+          headers: { "ngrok-skip-browser-warning": "true" },
         });
       } catch {
         // fetch() throws (not !response.ok) when the tunnel is unreachable.
