@@ -18,6 +18,15 @@ export interface CxrAnalysisResponse {
   disclaimer: string;
 }
 
+/** Grad-CAM explainability overlay for the top predicted pathology. */
+export interface CxrGradCamResponse {
+  overlay_data_url: string; // PNG data URL: heatmap composited over the radiograph
+  target_code: string;
+  target_name: string;
+  target_probability: number; // 0..1
+  disclaimer: string;
+}
+
 export interface CxrApiError {
   error: string;
   status?: number;

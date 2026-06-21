@@ -1,4 +1,4 @@
-import type { CxrAnalysisResponse } from "./types";
+import type { CxrAnalysisResponse, CxrGradCamResponse } from "./types";
 
 async function readError(res: Response): Promise<string> {
   try {
@@ -19,4 +19,16 @@ export async function analyzeXray(file: File): Promise<CxrAnalysisResponse> {
   });
   if (!res.ok) throw new Error(await readError(res));
   return (await res.json()) as CxrAnalysisResponse;
+}
+
+/** Fetch the Grad-CAM explainability overlay for an uploaded radiograph. */
+export async function gradcamXray(file: File): Promise<CxrGradCamResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/cxr/gradcam", {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return (await res.json()) as CxrGradCamResponse;
 }

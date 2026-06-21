@@ -11,6 +11,7 @@ import type { CxrAnalysisResponse } from "@/lib/cxr/types";
 
 import { FindingsSummary } from "./findings-summary";
 import { FindingRow } from "./finding-row";
+import { GradCamPanel } from "./gradcam-panel";
 import { AddToReportButton } from "@/components/report-generator/add-to-report-button";
 import { cxrToItem } from "@/lib/report/serialize";
 
@@ -22,6 +23,8 @@ export function CxrAnalyzer() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   // Persistent base64 copy of the image so it survives into the saved report.
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  // The uploaded File, kept so the additive Grad-CAM panel can request its overlay.
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,6 +35,7 @@ export function CxrAnalyzer() {
     setResult(null);
     setShowAll(false);
     setFileName(file.name);
+    setImageFile(file);
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return URL.createObjectURL(file);
@@ -230,6 +234,9 @@ export function CxrAnalyzer() {
           </div>
         </div>
       )}
+
+      {/* Grad-CAM explainability — additive panel appended after the results. */}
+      {result && !isLoading && <GradCamPanel file={imageFile} />}
     </div>
   );
 }

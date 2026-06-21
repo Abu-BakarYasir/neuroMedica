@@ -12,8 +12,9 @@ from typing import Dict
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from app.core.security import get_current_user
+from app.cxr import gradcam as cxr_gradcam
 from app.cxr import predictor as cxr_predictor
-from app.models.cxr import CxrAnalysisResponse, PathologyPredictionOut
+from app.models.cxr import CxrAnalysisResponse, GradCamResponse, PathologyPredictionOut
 
 logger = logging.getLogger(__name__)
 
@@ -95,3 +96,68 @@ async def analyze(
         )
 
     return _build_response(prediction, notes={"filename": file.filename})
+
+
+async def _read_image_upload(file: UploadFile) -> bytes:
+    """Shared upload validation for the explainability route.
+
+    Mirrors the guards in ``analyze`` without altering that endpoint.
+    """
+    if not file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No file provided.",
+        )
+    if file.content_type and file.content_type.startswith(_REJECTED_CONTENT_PREFIXES):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is not an image. Upload a PNG or JPEG radiograph.",
+        )
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file was empty.",
+        )
+    if len(raw) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File too large (max {_MAX_UPLOAD_BYTES // (1024 * 1024)} MB).",
+        )
+    return raw
+
+
+@router.post("/gradcam", response_model=GradCamResponse)
+async def gradcam(
+    file: UploadFile = File(..., description="Chest X-ray image (PNG/JPEG)"),
+    user: Dict = Depends(get_current_user),
+) -> GradCamResponse:
+    """Return a Grad-CAM heatmap overlay for the top predicted pathology.
+
+    Additive explainability endpoint — independent of /analyze.
+    """
+    raw = await _read_image_upload(file)
+
+    try:
+        result = cxr_gradcam.generate(raw)
+    except cxr_predictor.CxrImageError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except FileNotFoundError as e:
+        logger.error("Chest X-ray model missing: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Chest X-ray model is not available on this server.",
+        )
+    except Exception:
+        logger.exception("Chest X-ray Grad-CAM failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Grad-CAM generation failed. Please try again.",
+        )
+
+    return GradCamResponse(
+        overlay_data_url=result.overlay_data_url,
+        target_code=result.target_code,
+        target_name=result.target_name,
+        target_probability=result.target_probability,
+    )
