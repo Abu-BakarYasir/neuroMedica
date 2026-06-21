@@ -1,24 +1,29 @@
 export type ReportItemKind = "ecg" | "cxr" | "qa" | "symptom" | "note";
 
-/** One representative heartbeat waveform for a beat class, kept for graphing. */
-export interface EcgWaveform {
+/** One diagnostic superclass row captured for the report. */
+export interface EcgDiagnosisRow {
   code: string;
-  label: string;
-  /** Normalized samples (≈187 points) of a single representative beat. */
-  samples: number[];
+  name: string;
+  probability: number; // 0..1
+  positive: boolean;
 }
 
-/** Structured ECG payload used to render waveform graphs + a metrics table. */
+/** Structured 12-lead diagnostic payload for rich report rendering. */
 export interface EcgReportData {
-  dominantLabel: string;
-  dominantCode: string;
-  totalBeats: number;
-  abnormalBeats: number;
-  abnormalPercentage: number;
-  meanConfidence: number; // 0..1
+  topLabel: string;
+  topCode: string;
+  reliable: boolean;
+  reliability: string;
+  urgent: boolean;
+  headline: string;
+  findings: string[];
+  recommendation: string;
+  positiveCodes: string[];
+  diagnoses: EcgDiagnosisRow[];
+  heartRateBpm: number | null;
+  heartRateLabel: string | null;
+  rhythmRegularity: string | null;
   sourceFormat: string;
-  classDistribution: { code: string; pct: number }[];
-  waveforms: EcgWaveform[];
 }
 
 /** Structured chest X-ray payload used to render the image + findings table. */

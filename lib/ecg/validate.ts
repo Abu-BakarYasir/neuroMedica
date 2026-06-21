@@ -1,9 +1,10 @@
-// Validation for ECG uploads.
+// Validation for 12-lead ECG uploads.
 //
-// The ECG analyzer accepts a numeric signal (CSV of samples) OR a raster image
-// of a single-lead rhythm strip (PNG/JPG/…), which the backend digitizes into a
-// signal before classification. Vector/document formats (SVG, PDF) can't be
-// digitized, so we reject those up front with a clear, actionable message.
+// The analyzer accepts:
+//   * WFDB — a .hea header + its .dat signal file (the PTB-XL native format)
+//   * CSV  — a single 12-column file (one column per lead)
+//   * Image — a single 12-lead chart photo/scan (best-effort digitization)
+// SVG/PDF can't be used, so we reject those up front with a clear message.
 
 /** Minimal shape we need from a File (keeps this unit-testable). */
 export interface FileLike {
@@ -12,27 +13,14 @@ export interface FileLike {
 }
 
 const RASTER_IMAGE_EXTENSIONS = [
-  ".png",
-  ".jpg",
-  ".jpeg",
-  ".gif",
-  ".bmp",
-  ".webp",
-  ".heic",
-  ".heif",
-  ".tif",
-  ".tiff",
+  ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".heic", ".heif", ".tif", ".tiff",
 ];
-
-// Image-ish formats we explicitly cannot digitize.
-const UNSUPPORTED_EXTENSIONS = [".svg", ".pdf"];
 
 function hasExtension(name: string, exts: string[]): boolean {
   const lower = name.toLowerCase();
   return exts.some((ext) => lower.endsWith(ext));
 }
 
-/** True when the file looks like a raster image (by MIME type or extension). */
 export function isImageFile(file: FileLike): boolean {
   if (file.type && file.type.startsWith("image/") && file.type !== "image/svg+xml") {
     return true;
@@ -40,18 +28,37 @@ export function isImageFile(file: FileLike): boolean {
   return hasExtension(file.name, RASTER_IMAGE_EXTENSIONS);
 }
 
+function isUnsupported(file: FileLike): boolean {
+  return (
+    file.type === "application/pdf" ||
+    file.type === "image/svg+xml" ||
+    hasExtension(file.name, [".pdf", ".svg"])
+  );
+}
+
 /**
- * Validate an ECG upload. Returns an error message, or null when acceptable.
- * Raster images and CSV/text pass through (the backend does the authoritative
- * parsing/digitization). SVG and PDF are rejected with guidance.
+ * Validate the selected file set. Returns an error message, or null when
+ * acceptable. The backend does the authoritative parsing.
  */
-export function validateEcgFile(file: FileLike): string | null {
-  const isPdf =
-    file.type === "application/pdf" || hasExtension(file.name, [".pdf"]);
-  const isSvg =
-    file.type === "image/svg+xml" || hasExtension(file.name, [".svg"]);
-  if (isPdf || isSvg || hasExtension(file.name, UNSUPPORTED_EXTENSIONS)) {
-    return "PDF and SVG files aren't supported. Upload a PNG/JPG image of a single-lead ECG strip, or the signal as a CSV.";
+export function validateEcgFiles(files: FileLike[]): string | null {
+  if (!files.length) return "Select a file to analyze.";
+  if (files.some(isUnsupported)) {
+    return "PDF and SVG files aren't supported. Upload WFDB (.hea/.dat), a 12-column CSV, or a PNG/JPG image of the 12-lead chart.";
   }
-  return null;
+
+  const hea = files.filter((f) => hasExtension(f.name, [".hea"]));
+  const dat = files.filter((f) => hasExtension(f.name, [".dat"]));
+  const isWfdb = hea.length > 0 || dat.length > 0;
+
+  if (isWfdb) {
+    if (hea.length !== 1 || dat.length < 1) {
+      return "For WFDB, select both the .hea header and its matching .dat file.";
+    }
+    return null;
+  }
+
+  if (files.length > 1) {
+    return "Upload a single CSV or image, or a WFDB .hea + .dat pair.";
+  }
+  return null; // single CSV or image
 }

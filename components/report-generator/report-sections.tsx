@@ -52,41 +52,6 @@ function MarkdownBlock({ text }: { text: string }) {
   );
 }
 
-/** A single normalized beat drawn as an SVG line graph on gridded ECG paper. */
-function Waveform({ samples }: { samples: number[] }) {
-  const W = 220;
-  const H = 90;
-  const pad = 6;
-  if (!samples.length) return null;
-  const min = Math.min(...samples);
-  const max = Math.max(...samples);
-  const span = max - min || 1;
-  const pts = samples
-    .map((v, i) => {
-      const x = pad + (i / (samples.length - 1)) * (W - 2 * pad);
-      const y = pad + (1 - (v - min) / span) * (H - 2 * pad);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  return (
-    <svg
-      width="100%"
-      viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
-      style={{ display: "block", height: 90, background: "#FFF7F3", borderRadius: 6 }}
-    >
-      {/* faint ECG-paper grid */}
-      {Array.from({ length: Math.floor(W / 11) + 1 }).map((_, i) => (
-        <line key={`v${i}`} x1={i * 11} y1={0} x2={i * 11} y2={H} stroke="#FBD9C6" strokeWidth={0.5} />
-      ))}
-      {Array.from({ length: Math.floor(H / 11) + 1 }).map((_, i) => (
-        <line key={`h${i}`} x1={0} y1={i * 11} x2={W} y2={i * 11} stroke="#FBD9C6" strokeWidth={0.5} />
-      ))}
-      <polyline points={pts} fill="none" stroke={C.primary} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function MetricCell({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 10px", background: "#fff" }}>
@@ -112,52 +77,76 @@ function Bar({ value, danger }: { value: number; danger?: boolean }) {
 }
 
 function EcgReportSection({ data }: { data: EcgReportData }) {
-  const abnormal = data.abnormalPercentage > 0;
+  const abnormal = data.positiveCodes.some((c) => c !== "NORM");
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 12 }}>
-        <MetricCell label="Dominant rhythm" value={`${data.dominantLabel} (${data.dominantCode})`} />
-        <MetricCell label="Beats analyzed" value={String(data.totalBeats)} />
-        <MetricCell label="Abnormal beats" value={`${data.abnormalBeats} (${data.abnormalPercentage}%)`} />
-        <MetricCell label="Mean confidence" value={pct(data.meanConfidence)} />
+      <div
+        style={{
+          border: `1px solid ${data.reliable ? (data.urgent ? C.danger : C.border) : C.danger}`,
+          background: data.reliable ? (data.urgent ? C.dangerSoft : C.bg) : C.dangerSoft,
+          borderRadius: 8,
+          padding: "10px 12px",
+          marginBottom: 12,
+        }}
+      >
+        <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: 0.4, color: C.faint, marginBottom: 4 }}>
+          Clinical interpretation
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: data.urgent || !data.reliable ? C.danger : C.ink, marginBottom: 6 }}>
+          {data.headline}
+        </div>
+        {(data.heartRateBpm != null || data.rhythmRegularity) && (
+          <div style={{ fontSize: 11, color: C.body, marginBottom: 6 }}>
+            {data.heartRateBpm != null && (
+              <span>
+                Heart rate: <strong style={{ color: C.ink }}>~{Math.round(data.heartRateBpm)} bpm</strong>
+                {data.heartRateLabel ? ` (${data.heartRateLabel})` : ""}
+              </span>
+            )}
+            {data.heartRateBpm != null && data.rhythmRegularity ? "  ·  " : ""}
+            {data.rhythmRegularity && (
+              <span>
+                Rhythm: <strong style={{ color: C.ink }}>{data.rhythmRegularity}</strong>
+              </span>
+            )}
+          </div>
+        )}
+        {data.findings.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 6 }}>
+            {data.findings.map((f, i) => (
+              <div key={i} style={{ fontSize: 11, color: C.body, paddingLeft: 12 }}>
+                • {f}
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ fontSize: 11, color: C.body }}>
+          <strong style={{ color: C.ink }}>Recommendation:</strong> {data.recommendation}
+        </div>
       </div>
 
-      {data.waveforms.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginBottom: 6 }}>
-            Representative waveforms
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-            {data.waveforms.map((w) => (
-              <div key={w.code} style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: 8, background: "#fff" }}>
-                <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>
-                  <span style={{ fontWeight: 700, color: C.ink }}>{w.code}</span> — {w.label}
-                </div>
-                <Waveform samples={w.samples} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+        <MetricCell label="Top class" value={`${data.topLabel} (${data.topCode})`} />
+        <MetricCell label="Reliability" value={cap(data.reliability)} />
+        <MetricCell label="Source" value={data.sourceFormat} />
+      </div>
 
-      {data.classDistribution.length > 0 && (
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginBottom: 6 }}>
-            Rhythm class distribution
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            {data.classDistribution.map((d) => (
-              <div key={d.code} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: C.ink, width: 24 }}>{d.code}</span>
-                <div style={{ flex: 1 }}>
-                  <Bar value={d.pct / 100} danger={d.code !== "N"} />
-                </div>
-                <span style={{ fontSize: 11, color: C.muted, width: 40, textAlign: "right" }}>{d.pct}%</span>
-              </div>
-            ))}
-          </div>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginBottom: 6 }}>
+          Diagnostic superclass probabilities
         </div>
-      )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          {data.diagnoses.map((d) => (
+            <div key={d.code} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: C.ink, width: 44 }}>{d.code}</span>
+              <div style={{ flex: 1 }}>
+                <Bar value={d.probability} danger={d.positive && d.code !== "NORM"} />
+              </div>
+              <span style={{ fontSize: 11, color: C.muted, width: 40, textAlign: "right" }}>{pct(d.probability)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div
         style={{
@@ -170,12 +159,18 @@ function EcgReportSection({ data }: { data: EcgReportData }) {
           background: abnormal ? C.dangerSoft : C.okSoft,
         }}
       >
-        {abnormal
-          ? `Abnormal beats detected (${data.abnormalPercentage}%). Correlate clinically.`
-          : "No abnormal beats detected in the analyzed segment."}
+        {!data.reliable
+          ? "Image-based diagnosis — approximate and unverified. Confirm with WFDB or a clinician-read ECG."
+          : abnormal
+            ? "Abnormal diagnostic findings detected. Correlate clinically."
+            : "No diagnostic abnormality detected above threshold."}
       </div>
     </div>
   );
+}
+
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function CxrReportSection({ data }: { data: CxrReportData }) {
@@ -248,10 +243,10 @@ function CxrReportSection({ data }: { data: CxrReportData }) {
 
 /** Render a captured section by kind, falling back to its markdown body. */
 export function ReportSection({ item }: { item: ReportItem }) {
-  if (item.kind === "ecg" && item.data && "waveforms" in item.data) {
+  if (item.kind === "ecg" && item.data && "diagnoses" in item.data) {
     return <EcgReportSection data={item.data} />;
   }
-  if (item.kind === "cxr" && item.data && "findings" in item.data) {
+  if (item.kind === "cxr" && item.data && "detectedCount" in item.data) {
     return <CxrReportSection data={item.data} />;
   }
   return <MarkdownBlock text={item.markdown} />;

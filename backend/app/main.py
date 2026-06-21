@@ -30,8 +30,8 @@ async def lifespan(app: FastAPI):
         app.state.rag_service = rag
         _logger.info("RAG models preloaded — first request will be warm")
 
-        _logger.info("Preloading ECG CNN...")
-        from app.ecg.model_loader import warmup as ecg_warmup
+        _logger.info("Preloading PTB-XL 12-lead diagnostic model...")
+        from app.ecg.ptbxl.model_loader import warmup as ecg_warmup
         ecg_warmup()
 
         _logger.info("Preloading chest X-ray DenseNet...")

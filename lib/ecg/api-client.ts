@@ -1,6 +1,7 @@
-import type { EcgAnalysisResponse } from "./types";
+import type { EcgDiagnosisResponse } from "./types";
 
 export interface AnalyzeOptions {
+  /** Sampling rate for a 12-column CSV upload (ignored for WFDB/image). */
   samplingRateHz?: number;
 }
 
@@ -14,25 +15,28 @@ async function readError(res: Response): Promise<string> {
   return `Request failed (${res.status})`;
 }
 
-export async function analyzeFile(
-  file: File,
+/**
+ * Analyze a 12-lead recording. Accepts one or more files:
+ *  - WFDB: pass both the .hea and .dat files
+ *  - CSV : a single 12-column file
+ *  - Image: a single 12-lead chart image
+ */
+export async function analyzeFiles(
+  files: File[],
   options: AnalyzeOptions = {},
-): Promise<EcgAnalysisResponse> {
+): Promise<EcgDiagnosisResponse> {
   const form = new FormData();
-  form.append("file", file);
+  for (const file of files) form.append("files", file);
   if (options.samplingRateHz) {
     form.append("sampling_rate_hz", String(options.samplingRateHz));
   }
-  const res = await fetch("/api/ecg/analyze", {
-    method: "POST",
-    body: form,
-  });
+  const res = await fetch("/api/ecg/analyze", { method: "POST", body: form });
   if (!res.ok) throw new Error(await readError(res));
-  return (await res.json()) as EcgAnalysisResponse;
+  return (await res.json()) as EcgDiagnosisResponse;
 }
 
-export async function analyzeSample(): Promise<EcgAnalysisResponse> {
+export async function analyzeSample(): Promise<EcgDiagnosisResponse> {
   const res = await fetch("/api/ecg/analyze?sample=1", { method: "POST" });
   if (!res.ok) throw new Error(await readError(res));
-  return (await res.json()) as EcgAnalysisResponse;
+  return (await res.json()) as EcgDiagnosisResponse;
 }

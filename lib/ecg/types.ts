@@ -1,38 +1,39 @@
-/** AAMI EC57 5-class heartbeat codes returned by the backend. */
-export type BeatClassCode = "N" | "S" | "V" | "F" | "Q";
+/** PTB-XL diagnostic superclass codes returned by the backend. */
+export type SuperclassCode = "NORM" | "MI" | "STTC" | "CD" | "HYP";
 
-export interface ClassInfo {
-  code: BeatClassCode;
+export interface Diagnosis {
+  code: SuperclassCode;
   name: string;
   description: string;
   clinical_significance: string;
+  probability: number; // 0..1
+  positive: boolean; // probability >= threshold
 }
 
-export interface BeatPrediction {
-  index: number;
-  predicted_class: BeatClassCode;
-  predicted_label: string;
-  confidence: number; // 0..1
-  probabilities: Record<BeatClassCode, number>;
-  waveform: number[]; // 187 normalized samples
+/** Clinician-readable interpretation + a trust gate for the probabilities. */
+export interface EcgDiagnosticInterpretation {
+  /** False for image uploads (12-lead digitization is approximate). */
+  reliable: boolean;
+  reliability: "high" | "moderate" | "low";
+  /** True when a time-critical finding (MI) is present. */
+  urgent: boolean;
+  headline: string;
+  findings: string[];
+  recommendation: string;
+  caveats: string[];
+  heart_rate_bpm: number | null;
+  heart_rate_label: string | null; // "Bradycardia" | "Normal" | "Tachycardia"
+  rhythm_regularity: string | null; // "Regular" | "Irregular"
 }
 
-export interface AnalysisSummary {
-  total_beats: number;
-  dominant_class: BeatClassCode;
-  dominant_label: string;
-  class_counts: Record<BeatClassCode, number>;
-  class_percentages: Record<BeatClassCode, number>;
-  abnormal_beats: number;
-  abnormal_percentage: number;
-  mean_confidence: number;
-}
-
-export interface EcgAnalysisResponse {
-  summary: AnalysisSummary;
-  beats: BeatPrediction[];
-  classes: ClassInfo[];
-  source_format: "wide" | "long" | "sample" | "image";
+export interface EcgDiagnosisResponse {
+  diagnoses: Diagnosis[]; // all 5 superclasses, severity-ordered
+  top_code: SuperclassCode;
+  top_label: string;
+  positive_codes: SuperclassCode[];
+  threshold: number;
+  interpretation: EcgDiagnosticInterpretation;
+  source_format: "wfdb" | "csv" | "image" | "sample";
   notes: Record<string, unknown>;
   disclaimer: string;
 }

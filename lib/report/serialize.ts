@@ -1,14 +1,13 @@
 // Pure helpers that turn module results into report items, plus list reordering.
 // No DOM / network — unit-testable.
 
-import type { EcgAnalysisResponse } from "@/lib/ecg/types";
+import type { EcgDiagnosisResponse } from "@/lib/ecg/types";
 import type { CxrAnalysisResponse } from "@/lib/cxr/types";
 import type { SymptomExploreResponse } from "@/lib/symptoms/types";
 import type { CitationItem } from "@/lib/chatbot/types";
 import type {
   CxrReportData,
   EcgReportData,
-  EcgWaveform,
   ReportItem,
   ReportItemData,
   ReportItemKind,
@@ -43,52 +42,53 @@ function makeItem(
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
-/** One representative beat per detected class (capped), for waveform graphs. */
-function pickEcgWaveforms(result: EcgAnalysisResponse, max = 6): EcgWaveform[] {
-  const out: EcgWaveform[] = [];
-  const seen = new Set<string>();
-  for (const beat of result.beats) {
-    if (seen.has(beat.predicted_class)) continue;
-    if (!Array.isArray(beat.waveform) || beat.waveform.length === 0) continue;
-    seen.add(beat.predicted_class);
-    out.push({
-      code: beat.predicted_class,
-      label: beat.predicted_label,
-      samples: beat.waveform,
-    });
-    if (out.length >= max) break;
-  }
-  return out;
-}
+export function ecgToItem(result: EcgDiagnosisResponse): ReportItem {
+  const interp = result.interpretation;
+  const probLines = result.diagnoses
+    .map((d) => `- ${d.code} (${d.name}): ${pct(d.probability)}${d.positive ? " — detected" : ""}`)
+    .join("\n");
 
-export function ecgToItem(result: EcgAnalysisResponse): ReportItem {
-  const s = result.summary;
-  const distribution = Object.entries(s.class_percentages)
-    .filter(([, p]) => p > 0)
-    .map(([code, p]) => ({ code, pct: p }));
-  const dist = distribution.map((d) => `- ${d.code}: ${d.pct}%`).join("\n");
   const md = [
-    `**Dominant rhythm:** ${s.dominant_label} (${s.dominant_class})`,
-    `**Beats analyzed:** ${s.total_beats}`,
-    `**Abnormal beats:** ${s.abnormal_beats} (${s.abnormal_percentage}%)`,
-    `**Mean confidence:** ${pct(s.mean_confidence)}`,
+    `**Interpretation:** ${interp.headline}`,
+    interp.heart_rate_bpm != null
+      ? `**Heart rate:** ~${Math.round(interp.heart_rate_bpm)} bpm${
+          interp.heart_rate_label ? ` (${interp.heart_rate_label})` : ""
+        }`
+      : "",
+    interp.rhythm_regularity ? `**Rhythm:** ${interp.rhythm_regularity}` : "",
+    ...interp.findings.map((f) => `- ${f}`),
+    `**Recommendation:** ${interp.recommendation}`,
+    interp.reliable ? "" : "**Note:** Image-based diagnosis is approximate and unverified.",
     `**Source:** ${result.source_format}`,
     "",
-    "Class distribution:",
-    dist,
-  ].join("\n");
+    "Diagnostic superclass probabilities:",
+    probLines,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   const data: EcgReportData = {
-    dominantLabel: s.dominant_label,
-    dominantCode: s.dominant_class,
-    totalBeats: s.total_beats,
-    abnormalBeats: s.abnormal_beats,
-    abnormalPercentage: s.abnormal_percentage,
-    meanConfidence: s.mean_confidence,
+    topLabel: result.top_label,
+    topCode: result.top_code,
+    reliable: interp.reliable,
+    reliability: interp.reliability,
+    urgent: interp.urgent,
+    headline: interp.headline,
+    findings: interp.findings,
+    recommendation: interp.recommendation,
+    positiveCodes: result.positive_codes,
+    diagnoses: result.diagnoses.map((d) => ({
+      code: d.code,
+      name: d.name,
+      probability: d.probability,
+      positive: d.positive,
+    })),
+    heartRateBpm: interp.heart_rate_bpm,
+    heartRateLabel: interp.heart_rate_label,
+    rhythmRegularity: interp.rhythm_regularity,
     sourceFormat: result.source_format,
-    classDistribution: distribution,
-    waveforms: pickEcgWaveforms(result),
   };
-  return makeItem("ecg", "ECG Signal Analysis", md, data);
+  return makeItem("ecg", "12-Lead ECG Diagnosis", md, data);
 }
 
 export function cxrToItem(

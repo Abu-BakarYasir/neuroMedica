@@ -35,5 +35,7 @@ numpy>=1.26.0
 # baseline high-pass). Pulled in transitively by neurokit2; pinned here so the
 # image digitizer's dependency is explicit.
 scipy>=1.11.0
+# Reading 12-lead WFDB (.hea/.dat) uploads for the PTB-XL diagnostic model.
+wfdb>=4.1.0
 
 

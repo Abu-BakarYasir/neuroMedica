@@ -174,6 +174,9 @@ def segment_signal(
         "signal_length": int(signal.size),
         "sampling_rate_hz": round(float(sampling_rate), 2),
         "r_peaks_detected": len(peaks),
+        # Keep the R-peak sample indices so the interpretation layer can derive
+        # heart rate and RR-interval regularity. Capped to keep the payload small.
+        "r_peak_samples": [int(p) for p in peaks[:512]],
     }
     if extra:
         merged.update(extra)

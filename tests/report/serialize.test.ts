@@ -8,29 +8,70 @@ import {
 } from "@/lib/report/serialize";
 import type { ReportItem } from "@/lib/report/types";
 
+import type { EcgDiagnosisResponse } from "@/lib/ecg/types";
+
+const NORMAL_DIAGNOSIS: EcgDiagnosisResponse = {
+  diagnoses: [
+    { code: "MI", name: "Myocardial Infarction", description: "", clinical_significance: "", probability: 0.05, positive: false },
+    { code: "CD", name: "Conduction Disturbance", description: "", clinical_significance: "", probability: 0.04, positive: false },
+    { code: "STTC", name: "ST/T Change", description: "", clinical_significance: "", probability: 0.06, positive: false },
+    { code: "HYP", name: "Hypertrophy", description: "", clinical_significance: "", probability: 0.03, positive: false },
+    { code: "NORM", name: "Normal ECG", description: "", clinical_significance: "", probability: 0.95, positive: true },
+  ],
+  top_code: "NORM",
+  top_label: "Normal ECG",
+  positive_codes: ["NORM"],
+  threshold: 0.5,
+  interpretation: {
+    reliable: true,
+    reliability: "high",
+    urgent: false,
+    headline: "Normal ECG (NORM 95%).",
+    findings: ["Ventricular rate ≈ 72 bpm — Normal.", "Rhythm appears regular."],
+    recommendation: "Within normal limits on automated analysis.",
+    caveats: [],
+    heart_rate_bpm: 72,
+    heart_rate_label: "Normal",
+    rhythm_regularity: "Regular",
+  },
+  source_format: "wfdb",
+  notes: {},
+  disclaimer: "",
+};
+
 describe("ecgToItem", () => {
-  it("summarizes the ECG result", () => {
-    const item = ecgToItem({
-      summary: {
-        total_beats: 10,
-        dominant_class: "N",
-        dominant_label: "Normal",
-        class_counts: { N: 10, S: 0, V: 0, F: 0, Q: 0 },
-        class_percentages: { N: 100, S: 0, V: 0, F: 0, Q: 0 },
-        abnormal_beats: 0,
-        abnormal_percentage: 0,
-        mean_confidence: 1,
-      },
-      beats: [],
-      classes: [],
-      source_format: "sample",
-      notes: {},
-      disclaimer: "",
-    });
+  it("summarizes the diagnostic result", () => {
+    const item = ecgToItem(NORMAL_DIAGNOSIS);
     expect(item.kind).toBe("ecg");
     expect(item.title).toMatch(/ECG/);
-    expect(item.markdown).toMatch(/Normal \(N\)/);
-    expect(item.markdown).toMatch(/100%/);
+    expect(item.markdown).toMatch(/Interpretation:/);
+    expect(item.markdown).toMatch(/NORM/);
+    expect(item.markdown).toMatch(/72 bpm/);
+  });
+
+  it("captures structured diagnoses in data", () => {
+    const item = ecgToItem(NORMAL_DIAGNOSIS);
+    expect(item.data && "diagnoses" in item.data).toBe(true);
+    if (item.data && "diagnoses" in item.data) {
+      expect(item.data.diagnoses).toHaveLength(5);
+      expect(item.data.topCode).toBe("NORM");
+    }
+  });
+
+  it("flags an urgent MI finding", () => {
+    const mi: EcgDiagnosisResponse = {
+      ...NORMAL_DIAGNOSIS,
+      top_code: "MI",
+      top_label: "Myocardial Infarction",
+      positive_codes: ["MI"],
+      interpretation: {
+        ...NORMAL_DIAGNOSIS.interpretation,
+        urgent: true,
+        headline: "Abnormal ECG — Myocardial Infarction detected.",
+      },
+    };
+    const item = ecgToItem(mi);
+    expect(item.data && "diagnoses" in item.data && item.data.urgent).toBe(true);
   });
 });
 

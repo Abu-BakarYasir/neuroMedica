@@ -1,0 +1,9 @@
+# Offline training deps for the PTB-XL 12-lead model.
+# Install on the training machine (Colab/Kaggle/local GPU box) — these are NOT
+# added to the backend runtime image. tensorflow + numpy already ship with the
+# backend; pinned loosely here so a bare training env also works.
+wfdb>=4.1.0            # read PTB-XL WFDB .hea/.dat records
+pandas>=2.0.0          # ptbxl_database.csv + scp_statements.csv
+scikit-learn>=1.3.0    # roc_auc_score for per-class metrics
+tensorflow>=2.16.0     # GPU build recommended; CPU works but is slow
+numpy>=1.26.0
