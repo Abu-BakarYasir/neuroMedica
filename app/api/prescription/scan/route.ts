@@ -1,12 +1,16 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 60;
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
-// Groq's free multimodal model — reads images, no GPU on our side.
-const VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
+// Groq's free multimodal model — primary OCR path.
+const GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+// Claude vision — fallback when Groq is unavailable or fails.
+const CLAUDE_MODEL = "claude-opus-4-8";
 
 const PROMPT = `You are a medical OCR assistant. Read this prescription image and extract the patient's information. Return ONLY a JSON object — no prose, no markdown fences — with exactly this shape:
 {
@@ -17,6 +21,8 @@ const PROMPT = `You are a medical OCR assistant. Read this prescription image an
   ]
 }
 If the image is not a prescription or is unreadable, return the object with an empty "patient_name" and an empty "medications" array. Never invent data.`;
+
+const SUPPORTED_MEDIA = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 /** Pull a JSON object out of the model's reply, tolerating ```json fences. */
 function parseJson(text: string): Record<string, unknown> {
@@ -46,11 +52,78 @@ function normalize(data: Record<string, unknown>) {
   };
 }
 
+/** Primary path: Groq Llama 4 vision. Throws on any failure so we can fall back. */
+async function extractWithGroq(dataUrl: string): Promise<Record<string, unknown>> {
+  const res = await fetch(GROQ_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${GROQ_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: GROQ_VISION_MODEL,
+      temperature: 0,
+      max_tokens: 1024,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: PROMPT },
+            { type: "image_url", image_url: { url: dataUrl } },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Groq ${res.status}: ${detail.slice(0, 300)}`);
+  }
+  const completion = await res.json();
+  const content: string = completion?.choices?.[0]?.message?.content ?? "";
+  return parseJson(content);
+}
+
+/** Fallback path: Claude vision via the Anthropic SDK. Throws on failure. */
+async function extractWithClaude(
+  base64: string,
+  mediaType: string,
+): Promise<Record<string, unknown>> {
+  const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+  const message = await anthropic.messages.create({
+    model: CLAUDE_MODEL,
+    max_tokens: 1024,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: mediaType as
+                | "image/jpeg"
+                | "image/png"
+                | "image/gif"
+                | "image/webp",
+              data: base64,
+            },
+          },
+          { type: "text", text: PROMPT },
+        ],
+      },
+    ],
+  });
+  const textBlock = message.content.find((b) => b.type === "text");
+  const content = textBlock && textBlock.type === "text" ? textBlock.text : "";
+  return parseJson(content);
+}
+
 /**
- * Prescription scanning. Calls Groq's vision model directly (no Colab, no
- * ngrok, no Python backend), extracts patient name / date / medications, and
- * returns them for review. Does NOT write to the DB — the dashboard inserts
- * the row after the doctor edits the extracted fields.
+ * Prescription scanning. Tries Groq's vision model first, then falls back to
+ * Claude vision if Groq is unavailable or fails. Extracts patient name / date /
+ * medications and returns them for review. Does NOT write to the DB — the
+ * dashboard inserts the row after the doctor edits the extracted fields.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -65,9 +138,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!GROQ_API_KEY) {
+    if (!GROQ_API_KEY && !ANTHROPIC_API_KEY) {
       return NextResponse.json(
-        { error: "Scanning is not configured (missing GROQ_API_KEY)." },
+        { error: "Scanning is not configured (no GROQ_API_KEY or ANTHROPIC_API_KEY)." },
         { status: 503 },
       );
     }
@@ -75,10 +148,7 @@ export async function POST(request: NextRequest) {
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof Blob) || file.size === 0) {
-      return NextResponse.json(
-        { error: "No image provided." },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "No image provided." }, { status: 400 });
     }
     if (file.type && !file.type.startsWith("image/")) {
       return NextResponse.json(
@@ -87,57 +157,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Encode the image as a base64 data URL for the vision model.
+    // Encode the image once for both providers.
     const bytes = Buffer.from(await file.arrayBuffer());
-    const mime = file.type || "image/jpeg";
-    const dataUrl = `data:${mime};base64,${bytes.toString("base64")}`;
+    const base64 = bytes.toString("base64");
+    const mediaType = SUPPORTED_MEDIA.includes(file.type) ? file.type : "image/jpeg";
+    const dataUrl = `data:${mediaType};base64,${base64}`;
 
-    const groqRes = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: VISION_MODEL,
-        temperature: 0,
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: PROMPT },
-              { type: "image_url", image_url: { url: dataUrl } },
-            ],
-          },
-        ],
-      }),
-    });
+    let parsed: Record<string, unknown> | null = null;
 
-    if (!groqRes.ok) {
-      const detail = await groqRes.text().catch(() => "");
-      console.error("Groq scan error:", groqRes.status, detail.slice(0, 500));
-      return NextResponse.json(
-        {
-          error:
-            groqRes.status === 413
-              ? "Image is too large. Please upload a smaller photo."
-              : "The AI scanning service failed. Please try again.",
-        },
-        { status: 502 },
-      );
+    // 1) Primary: Groq.
+    if (GROQ_API_KEY) {
+      try {
+        parsed = await extractWithGroq(dataUrl);
+      } catch (e) {
+        console.error("Groq scan failed, falling back to Claude:", e);
+      }
     }
 
-    const completion = await groqRes.json();
-    const content: string = completion?.choices?.[0]?.message?.content ?? "";
+    // 2) Fallback: Claude vision.
+    if (!parsed && ANTHROPIC_API_KEY) {
+      try {
+        parsed = await extractWithClaude(base64, mediaType);
+      } catch (e) {
+        console.error("Claude scan fallback failed:", e);
+      }
+    }
 
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = parseJson(content);
-    } catch {
-      console.error("Could not parse scan JSON:", content.slice(0, 500));
+    if (!parsed) {
       return NextResponse.json(
-        { error: "The AI scanning service returned an unreadable result." },
+        { error: "The AI scanning service failed. Please try again." },
         { status: 502 },
       );
     }
