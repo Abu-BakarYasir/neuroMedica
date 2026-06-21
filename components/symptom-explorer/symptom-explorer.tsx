@@ -13,7 +13,11 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { exploreSymptoms } from "@/lib/symptoms/api-client";
+import {
+  exploreSymptomsStream,
+  type SymptomMeta,
+  type SymptomResult,
+} from "@/lib/symptoms/api-client";
 import { splitSymptoms } from "@/lib/symptoms/parse";
 import type {
   Differential,
@@ -40,7 +44,10 @@ const LIKELIHOOD_STYLE: Record<Likelihood, string> = {
 export function SymptomExplorer() {
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
-  const [result, setResult] = useState<SymptomExploreResponse | null>(null);
+  // Citations + confidence arrive first (after retrieval); the differential
+  // fills in once Claude finishes — so they're tracked separately.
+  const [meta, setMeta] = useState<SymptomMeta | null>(null);
+  const [result, setResult] = useState<SymptomResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,10 +74,13 @@ export function SymptomExplorer() {
     setDraft("");
     setIsLoading(true);
     setError(null);
+    setMeta(null);
     setResult(null);
     try {
-      const data = await exploreSymptoms(tokens.join(", "));
-      setResult(data);
+      await exploreSymptomsStream(tokens.join(", "), {
+        onMeta: setMeta,
+        onResult: setResult,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to analyze symptoms");
     } finally {
@@ -95,9 +105,9 @@ export function SymptomExplorer() {
 
   const citationsByIndex = useMemo(() => {
     const map = new Map<number, CitationItem>();
-    result?.citations.forEach((c) => map.set(c.index, c));
+    meta?.citations.forEach((c) => map.set(c.index, c));
     return map;
-  }, [result]);
+  }, [meta]);
 
   const canExplore = (symptoms.length > 0 || draft.trim().length > 0) && !isLoading;
 
@@ -170,7 +180,7 @@ export function SymptomExplorer() {
       </div>
 
       {/* Example sets (empty state) */}
-      {!result && !isLoading && (
+      {!meta && !isLoading && (
         <div className="mt-6">
           <div className="text-[12px] text-muted-foreground mb-3">Try a preset</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -191,11 +201,11 @@ export function SymptomExplorer() {
         </div>
       )}
 
-      {/* Loading */}
-      {isLoading && (
+      {/* Retrieval phase — until citations stream in */}
+      {isLoading && !meta && (
         <div className="mt-6 flex items-center gap-3 rounded-[14px] border border-border bg-card p-6 text-[13px] text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin text-neuro-primary" />
-          Analyzing symptoms against the literature — this may take a moment.
+          Searching the literature for matching evidence…
         </div>
       )}
 
@@ -212,22 +222,47 @@ export function SymptomExplorer() {
         </div>
       )}
 
-      {/* Results */}
-      {result && !isLoading && (
-        <Results result={result} citationsByIndex={citationsByIndex} />
+      {/* Results — citations + confidence render as soon as `meta` lands;
+          the differential fills in once `result` arrives. */}
+      {meta && !error && (
+        <Results
+          symptoms={symptoms.join(", ")}
+          meta={meta}
+          result={result}
+          citationsByIndex={citationsByIndex}
+        />
       )}
     </div>
   );
 }
 
 function Results({
+  symptoms,
+  meta,
   result,
   citationsByIndex,
 }: {
-  result: SymptomExploreResponse;
+  symptoms: string;
+  meta: SymptomMeta;
+  result: SymptomResult | null;
   citationsByIndex: Map<number, CitationItem>;
 }) {
-  const confidence = result.confidence;
+  const confidence = meta.confidence;
+  // Re-assemble the full response shape once the differential lands — needed
+  // for "Add to report".
+  const fullResult: SymptomExploreResponse | null = result
+    ? {
+        symptoms: result.symptoms,
+        differentials: result.differentials,
+        summary: result.summary,
+        recommended_workup: result.recommended_workup,
+        structured: result.structured,
+        citations: meta.citations,
+        confidence: meta.confidence,
+        disclaimer: meta.disclaimer,
+      }
+    : null;
+
   return (
     <div className="mt-6 space-y-5">
       {/* Confidence + summary */}
@@ -236,48 +271,60 @@ function Results({
           {confidence} confidence
         </span>
         <span className="text-[11px] text-muted-foreground">
-          Differential diagnosis for: {result.symptoms}
+          Differential diagnosis for: {result?.symptoms ?? symptoms}
         </span>
-        <AddToReportButton
-          build={() => symptomToItem(result)}
-          className="ml-auto h-8"
-        />
+        {fullResult && (
+          <AddToReportButton
+            build={() => symptomToItem(fullResult)}
+            className="ml-auto h-8"
+          />
+        )}
       </div>
 
-      {result.summary && (
+      {result?.summary && (
         <p className="text-[13px] text-foreground leading-relaxed">{result.summary}</p>
       )}
 
       {/* Prose fallback (model didn't return structured JSON) */}
-      {!result.structured && (
+      {result && !result.structured && (
         <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
           Showing a narrative summary — a structured differential wasn&apos;t available
           for this query.
         </div>
       )}
 
-      {/* Differential cards */}
-      {result.differentials.length > 0 && (
-        <div className="grid grid-cols-1 gap-3">
-          {result.differentials.map((d, i) => (
-            <DifferentialCard
-              key={`${d.condition}-${i}`}
-              d={d}
-              citationsByIndex={citationsByIndex}
-            />
-          ))}
-        </div>
-      )}
+      {/* Differential cards — or a placeholder while Claude composes them */}
+      {result ? (
+        <>
+          {result.differentials.length > 0 && (
+            <div className="grid grid-cols-1 gap-3">
+              {result.differentials.map((d, i) => (
+                <DifferentialCard
+                  key={`${d.condition}-${i}`}
+                  d={d}
+                  citationsByIndex={citationsByIndex}
+                />
+              ))}
+            </div>
+          )}
 
-      {result.structured && result.differentials.length === 0 && (
-        <div className="rounded-[14px] border border-border bg-card p-6 text-center text-[13px] text-muted-foreground">
-          No differential could be grounded in the available evidence. Try adding
-          more specific symptoms.
+          {result.structured && result.differentials.length === 0 && (
+            <div className="rounded-[14px] border border-border bg-card p-6 text-center text-[13px] text-muted-foreground">
+              No differential could be grounded in the available evidence. Try adding
+              more specific symptoms.
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="flex items-center gap-3 rounded-[14px] border border-border bg-card p-6 text-[13px] text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin text-neuro-primary" />
+          Found {meta.citations.length} source
+          {meta.citations.length === 1 ? "" : "s"} — composing the differential…
         </div>
       )}
 
       {/* Recommended workup */}
-      {result.recommended_workup.length > 0 && (
+      {result && result.recommended_workup.length > 0 && (
         <div className="rounded-[14px] border border-border bg-card p-4">
           <div className="text-[13px] font-semibold text-foreground mb-2">
             Recommended workup
@@ -290,14 +337,14 @@ function Results({
         </div>
       )}
 
-      {/* Sources */}
-      {result.citations.length > 0 && (
+      {/* Sources — available immediately from `meta` */}
+      {meta.citations.length > 0 && (
         <div className="rounded-[14px] border border-border bg-card p-4">
           <div className="text-[13px] font-semibold text-foreground mb-3">
-            Sources ({result.citations.length})
+            Sources ({meta.citations.length})
           </div>
           <div className="space-y-2">
-            {result.citations.map((c) => (
+            {meta.citations.map((c) => (
               <SourceRow key={c.index} c={c} />
             ))}
           </div>
