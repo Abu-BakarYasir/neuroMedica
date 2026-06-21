@@ -9,15 +9,16 @@ That error means the browser's `fetch()` could not reach the URL in
 
 | Cause | Permanent fix |
 |---|---|
-| ngrok free-tier serves an HTML warning page to browser requests | **Done in frontend** — the scan `fetch()` now sends `ngrok-skip-browser-warning: true`. |
+| ngrok free-tier serves an HTML warning page / CORS blocks the browser response | **Done — the scan now goes through a server proxy** (`app/api/prescription/scan/route.ts`). The browser calls our own same-origin route; the route forwards to ngrok server-side with `ngrok-skip-browser-warning: true`. No browser CORS, no interstitial. |
 | The stored URL goes stale every time Colab/ngrok restarts | **Auto-publish cell below** — write the live URL to `system_config` on every start. |
 | The Colab runtime is simply stopped (idle timeout, closed tab) | Nothing in code can fix a powered-off server — the runtime must be running. Keep the notebook tab open; consider Colab Pro to reduce idle disconnects. |
 
-### 1. CORS — required for the browser to read the response
+### 1. CORS (now optional)
 
-The app calls the tunnel directly from the user's browser, so FastAPI **must** send CORS
-headers or the browser blocks the response (which surfaces as the same "Couldn't reach…"
-error, because `fetch()` rejects). Add this once, right after `app = FastAPI()`:
+Because the browser no longer calls the tunnel directly — it calls the Next.js proxy route,
+which calls ngrok server-side — **CORS on the Colab FastAPI is no longer required**. You can
+leave it in for direct testing convenience, but the app no longer depends on it. For
+reference, to allow direct browser calls you would add, right after `app = FastAPI()`:
 
 ```python
 from fastapi.middleware.cors import CORSMiddleware

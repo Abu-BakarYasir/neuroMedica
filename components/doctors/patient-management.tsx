@@ -371,48 +371,27 @@ export function PatientManagement() {
     setSaveSuccess(false);
 
     try {
-      const { data: configData, error: configError } = await supabase
-        .from("system_config")
-        .select("ngrok_url")
-        .eq("id", 1)
-        .single();
-
-      if (configError || !configData?.ngrok_url || configData.ngrok_url === 'waiting_for_colab') {
-        throw new Error("The AI processing server is currently offline. Please start the Colab notebook.");
-      }
-
-      // The stored ngrok URL can be stale even when non-empty (Colab restarted
-      // and issued a new tunnel). Surface that as a clear, actionable message
-      // instead of the browser's cryptic "Failed to fetch".
-
-      const apiUrl = configData.ngrok_url;
-      const base = apiUrl.trim().replace(/\/+$/, "");
-      const cleanUrl = base + (base.endsWith("/scan") ? "/" : "/scan/");
-
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("doctor_id", doctorId); // ✨ NEW: Send the doctor ID to FastAPI
+      formData.append("doctor_id", doctorId);
 
-      let response: Response;
-      try {
-        response = await fetch(cleanUrl, {
-          method: "POST",
-          body: formData,
-          // ngrok's free tier serves an HTML interstitial to "browser" requests
-          // unless this header is present, which breaks the JSON response.
-          // (Don't set Content-Type — the browser must set the multipart boundary.)
-          headers: { "ngrok-skip-browser-warning": "true" },
-        });
-      } catch {
-        // fetch() throws (not !response.ok) when the tunnel is unreachable.
+      // Go through our own server route, not ngrok directly: a server-to-server
+      // request isn't subject to browser CORS or ngrok's free-tier interstitial,
+      // which is what made direct calls fail. The route resolves the current
+      // tunnel URL from system_config and forwards the upload.
+      const response = await fetch("/api/prescription/scan", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
         throw new Error(
-          "Couldn't reach the AI scanning server. The Colab notebook may be stopped or its tunnel URL is out of date — restart it and refresh the saved URL."
+          result?.error || "AI server failed to process the document."
         );
       }
 
-      if (!response.ok) throw new Error("AI server failed to process the document.");
-
-      const result = await response.json();
       const data = result?.data;
 
       if (!looksLikePrescription(data)) {
