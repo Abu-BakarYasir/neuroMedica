@@ -6,6 +6,8 @@ import { ChatInput } from "./chat-input";
 import { ChatbotHeader } from "./chatbot-header";
 import { Loader2, Sparkles } from "lucide-react";
 import type { Message } from "@/lib/chatbot/types";
+import { createClient } from "@/lib/supabase/client";
+import { buildDoctorName, timeGreeting } from "@/lib/auth/user-display";
 
 interface ChatWindowProps {
   messages: Message[];
@@ -32,6 +34,21 @@ export function ChatWindow({
   const [followBottom, setFollowBottom] = useState(true);
   const lastMessageCountRef = useRef(0);
   const lastUserMessageCountRef = useRef(0);
+
+  // Personalised greeting for the empty state. Resolved on the client only
+  // (after mount) so the time-of-day text can't cause a hydration mismatch.
+  const [greeting, setGreeting] = useState("");
+  const [doctorName, setDoctorName] = useState("");
+  useEffect(() => {
+    setGreeting(timeGreeting());
+    const supabase = createClient();
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        if (user) setDoctorName(buildDoctorName(user));
+      })
+      .catch(() => {});
+  }, []);
 
   // Suggestion clicks fill the composer (don't auto-send) so doctors can edit.
   const [inputPrefill, setInputPrefill] = useState<
@@ -103,10 +120,21 @@ export function ChatWindow({
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <h2 className="text-2xl sm:text-3xl font-semibold text-foreground mb-2 tracking-tight">
-                How can I help you today?
+                {greeting ? (
+                  <>
+                    {greeting}
+                    {doctorName && (
+                      <>
+                        , <span className="text-neuro-primary">{doctorName}</span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  "How can I help you today?"
+                )}
               </h2>
               <p className="text-sm text-muted-foreground mb-8">
-                Ask about clinical guidelines, differentials, drug interactions, or recent evidence.
+                How can I help you today? Ask about clinical guidelines, differentials, drug interactions, or recent evidence.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-left">

@@ -60,3 +60,14 @@ export function buildDoctorName(
   const name = buildDisplayName(user, fallback);
   return /^dr\.?\s/i.test(name) ? name : `Dr. ${name}`;
 }
+
+/**
+ * Time-of-day greeting ("Good morning" / "Good afternoon" / "Good evening").
+ * Pure (date is injectable) so it can be unit-tested without mocking the clock.
+ */
+export function timeGreeting(date: Date = new Date()): string {
+  const hour = date.getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}

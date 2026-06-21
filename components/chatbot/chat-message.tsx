@@ -2,54 +2,18 @@
 
 import { cn } from "@/lib/utils";
 import type { Message, CitationItem } from "@/lib/chatbot/types";
-import { Sparkles, ExternalLink, BookOpen, FileText, AlertTriangle, ShieldCheck, Pill, ScrollText } from "lucide-react";
+import { Sparkles, ExternalLink, BookOpen, FileText, AlertTriangle, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-/* ------------------------------------------------------------------ */
-/*  Source-aware helpers                                              */
-/* ------------------------------------------------------------------ */
-
-function citationLink(c: CitationItem): string {
-  if (c.url) return c.url;
-  switch (c.source_type) {
-    case "openfda": {
-      const setId = c.pmid.startsWith("fda:") ? c.pmid.slice(4) : c.pmid;
-      return `https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=${encodeURIComponent(setId)}`;
-    }
-    case "rxnorm": {
-      const rxcui = c.pmid.startsWith("rxnorm:") ? c.pmid.slice(7) : c.pmid;
-      return `https://mor.nlm.nih.gov/RxNav/search?searchBy=RXCUI&searchTerm=${encodeURIComponent(rxcui)}`;
-    }
-    default:
-      return `https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(c.pmid)}/`;
-  }
-}
-
-function citationSourceMeta(c: CitationItem): {
-  label: string;
-  idLabel: string;
-  idValue: string;
-  icon: typeof BookOpen;
-  linkLabel: string;
-} {
-  switch (c.source_type) {
-    case "openfda": {
-      const setId = c.pmid.startsWith("fda:") ? c.pmid.slice(4) : c.pmid;
-      return { label: "FDA Drug Label", idLabel: "SetID", idValue: setId, icon: Pill, linkLabel: "DailyMed" };
-    }
-    case "rxnorm": {
-      const rxcui = c.pmid.startsWith("rxnorm:") ? c.pmid.slice(7) : c.pmid;
-      return { label: "RxNorm Drug", idLabel: "RxCUI", idValue: rxcui, icon: Pill, linkLabel: "RxNav" };
-    }
-    case "guideline":
-      return { label: "Clinical Guideline", idLabel: "PMID", idValue: c.pmid, icon: ScrollText, linkLabel: "PubMed" };
-    default:
-      return { label: "PubMed", idLabel: "PMID", idValue: c.pmid, icon: BookOpen, linkLabel: "PubMed" };
-  }
-}
+import { citationLink, citationSourceMeta } from "@/lib/chatbot/citations";
+import { MarkdownMessage } from "./markdown-message";
+import { CopyButton } from "./copy-button";
 
 interface ChatMessageProps {
   message: Message;
+}
+
+function formatTime(timestamp: Date) {
+  return new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 /* ------------------------------------------------------------------ */
@@ -75,159 +39,6 @@ function confidenceBadgeVariant(confidence: string) {
     icon: AlertTriangle,
     label: c === "insufficient" ? "Insufficient evidence" : "Low confidence",
   };
-}
-
-/* ------------------------------------------------------------------ */
-/*  Simple markdown-like renderer                                      */
-/*  Supports: **bold**, headings (##), bullet lists (- / *),           */
-/*  numbered lists, inline citations [1], and line breaks.             */
-/* ------------------------------------------------------------------ */
-
-function renderFormattedText(text: string, citations?: CitationItem[]) {
-  const lines = text.split("\n");
-  const elements: React.ReactNode[] = [];
-  let listItems: React.ReactNode[] = [];
-  let listType: "ul" | "ol" | null = null;
-  let key = 0;
-
-  const flushList = () => {
-    if (listItems.length > 0 && listType) {
-      const Tag = listType;
-      elements.push(
-        <Tag
-          key={`list-${key++}`}
-          className={cn(
-            "my-1.5 space-y-0.5 text-sm",
-            listType === "ul" ? "list-disc pl-5" : "list-decimal pl-5"
-          )}
-        >
-          {listItems}
-        </Tag>
-      );
-      listItems = [];
-      listType = null;
-    }
-  };
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Empty line
-    if (!trimmed) {
-      flushList();
-      continue;
-    }
-
-    // Heading: ## or ### or ####
-    const headingMatch = trimmed.match(/^(#{1,4})\s+(.+)$/);
-    if (headingMatch) {
-      flushList();
-      const level = headingMatch[1].length;
-      const headingText = headingMatch[2];
-      const cls =
-        level <= 2
-          ? "text-sm font-bold text-gray-900 dark:text-neutral-100 mt-3 mb-1"
-          : "text-sm font-semibold text-gray-800 dark:text-neutral-200 mt-2 mb-0.5";
-      elements.push(
-        <p key={`h-${key++}`} className={cls}>
-          {renderInline(headingText, citations)}
-        </p>
-      );
-      continue;
-    }
-
-    // Unordered list item: - or *
-    const ulMatch = trimmed.match(/^[-*]\s+(.+)$/);
-    if (ulMatch) {
-      if (listType !== "ul") {
-        flushList();
-        listType = "ul";
-      }
-      listItems.push(
-        <li key={`li-${key++}`} className="text-sm text-gray-800 dark:text-neutral-200 leading-relaxed">
-          {renderInline(ulMatch[1], citations)}
-        </li>
-      );
-      continue;
-    }
-
-    // Ordered list item: 1. or 1)
-    const olMatch = trimmed.match(/^\d+[.)]\s+(.+)$/);
-    if (olMatch) {
-      if (listType !== "ol") {
-        flushList();
-        listType = "ol";
-      }
-      listItems.push(
-        <li key={`li-${key++}`} className="text-sm text-gray-800 dark:text-neutral-200 leading-relaxed">
-          {renderInline(olMatch[1], citations)}
-        </li>
-      );
-      continue;
-    }
-
-    // Bold-only line (like **Key Takeaways:**)
-    const boldLineMatch = trimmed.match(/^\*\*(.+?)\*\*:?\s*$/);
-    if (boldLineMatch) {
-      flushList();
-      elements.push(
-        <p key={`b-${key++}`} className="text-sm font-semibold text-gray-900 dark:text-neutral-100 mt-2 mb-0.5">
-          {boldLineMatch[1]}
-        </p>
-      );
-      continue;
-    }
-
-    // Normal paragraph
-    flushList();
-    elements.push(
-      <p key={`p-${key++}`} className="text-sm text-gray-800 dark:text-neutral-200 leading-relaxed mb-1.5">
-        {renderInline(trimmed, citations)}
-      </p>
-    );
-  }
-  flushList();
-  return elements;
-}
-
-/** Render inline formatting: **bold** and citation references [1] */
-function renderInline(text: string, citations?: CitationItem[]): React.ReactNode[] {
-  // Split on **bold** and [N] citation patterns
-  const parts = text.split(/(\*\*[^*]+?\*\*|\[\d+\])/g);
-  return parts.map((part, i) => {
-    // Bold
-    const boldMatch = part.match(/^\*\*(.+?)\*\*$/);
-    if (boldMatch) {
-      return (
-        <strong key={i} className="font-semibold text-gray-900 dark:text-neutral-100">
-          {boldMatch[1]}
-        </strong>
-      );
-    }
-    // Citation reference [N]
-    const citeMatch = part.match(/^\[(\d+)\]$/);
-    if (citeMatch && citations?.length) {
-      const num = parseInt(citeMatch[1], 10);
-      const citation = citations.find((c) => c.index === num);
-      if (citation) {
-        const meta = citationSourceMeta(citation);
-        return (
-          <a
-            key={i}
-            href={citationLink(citation)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center w-4.5 h-4.5 text-[10px] font-bold text-white bg-neuro-primary rounded-full mx-0.5 hover:bg-neuro-primary/80 transition-colors cursor-pointer align-text-top leading-none"
-            style={{ minWidth: "18px", minHeight: "18px", padding: "2px 4px" }}
-            title={citation.title || `${meta.idLabel}: ${meta.idValue}`}
-          >
-            {num}
-          </a>
-        );
-      }
-    }
-    return <span key={i}>{part}</span>;
-  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -326,19 +137,17 @@ export function ChatMessage({ message }: ChatMessageProps) {
   // Assistant: full-width, flat (no card), avatar to the left — Claude-style.
   if (isUser) {
     return (
-      <div className="flex justify-end py-3">
-        <div className="max-w-[80%] rounded-2xl bg-neuro-primary text-white px-4 py-2.5 shadow-sm">
+      <div className="group flex flex-col items-end py-3">
+        <div className="max-w-[80%] rounded-2xl rounded-br-md bg-neuro-primary text-white px-4 py-2.5 shadow-sm">
           <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
             {message.content}
           </p>
+        </div>
+        <div className="mt-1 flex items-center gap-1 pr-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           {message.timestamp && (
-            <p className="text-[10px] mt-1.5 text-white/70 text-right">
-              {new Date(message.timestamp).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </p>
+            <span className="text-[10px] text-muted-foreground">{formatTime(message.timestamp)}</span>
           )}
+          <CopyButton value={message.content} iconOnly label="Copy message" />
         </div>
       </div>
     );
@@ -380,10 +189,21 @@ export function ChatMessage({ message }: ChatMessageProps) {
           </div>
         )}
 
-        {/* Assistant body — flat text on the page background */}
-        <div className="space-y-0 text-foreground">
-          {renderFormattedText(message.content, message.citations)}
-        </div>
+        {/* Assistant body — rich markdown on the page background */}
+        {isError ? (
+          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+        ) : (
+          <div className="text-foreground">
+            <MarkdownMessage content={message.content} citations={message.citations} />
+          </div>
+        )}
+
+        {/* Response actions */}
+        {!isError && message.content && (
+          <div className="mt-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+            <CopyButton value={message.content} label="Copy" />
+          </div>
+        )}
 
         {/* Citation cards */}
         {hasCitations && (
@@ -414,10 +234,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {/* Timestamp — only shown on hover to keep the conversation clean */}
         {message.timestamp && (
           <p className="text-[10px] mt-2 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-            {new Date(message.timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+            {formatTime(message.timestamp)}
           </p>
         )}
       </div>

@@ -4,6 +4,7 @@ import {
   buildDoctorName,
   emailLocalPart,
   joinName,
+  timeGreeting,
 } from "@/lib/auth/user-display";
 
 describe("joinName", () => {
@@ -86,5 +87,21 @@ describe("buildDoctorName", () => {
     expect(
       buildDoctorName({ user_metadata: { full_name: "Dr. House" } })
     ).toBe("Dr. House");
+  });
+});
+
+describe("timeGreeting", () => {
+  const at = (hour: number) => new Date(2026, 0, 1, hour, 0, 0);
+  it("greets morning before noon", () => {
+    expect(timeGreeting(at(0))).toBe("Good morning");
+    expect(timeGreeting(at(11))).toBe("Good morning");
+  });
+  it("greets afternoon from noon to 16:59", () => {
+    expect(timeGreeting(at(12))).toBe("Good afternoon");
+    expect(timeGreeting(at(16))).toBe("Good afternoon");
+  });
+  it("greets evening from 17:00 onward", () => {
+    expect(timeGreeting(at(17))).toBe("Good evening");
+    expect(timeGreeting(at(23))).toBe("Good evening");
   });
 });
