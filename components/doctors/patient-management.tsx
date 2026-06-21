@@ -22,6 +22,19 @@ import { Label } from "@/components/ui/label";
 import { PatientFormDialog } from "./patient-form-dialog";
 import type { PatientRow } from "@/lib/patients/types";
 
+type EditableMedication = {
+  medicine_name: string;
+  dosage: string;
+  frequency: string;
+};
+
+type EditableScan = {
+  id: string | null;
+  patient_name: string;
+  date: string;
+  medications: EditableMedication[];
+};
+
 function TrendIcon({ trend }: { trend: "up" | "down" | "neutral" }) {
   const iconMap = {
     up: "/assets/icons/green.svg",
@@ -45,8 +58,11 @@ export function PatientManagement() {
 
   // --- State Management ---
   const [file, setFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [scannedData, setScannedData] = useState<any>(null);
+  const [editData, setEditData] = useState<EditableScan | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [savedPatients, setSavedPatients] = useState<any[]>([]);
@@ -204,6 +220,139 @@ export function PatientManagement() {
     fetchPatients({ silent: true });
   };
 
+  /** Validate + accept a chosen file (shared by the picker and drag-and-drop). */
+  const acceptFile = (incoming: File | null | undefined) => {
+    setEditData(null);
+    setSaveSuccess(false);
+    if (!incoming) return;
+    if (!incoming.type.startsWith("image/")) {
+      setError("Please upload an image file (PNG or JPG of the prescription).");
+      setFile(null);
+      return;
+    }
+    setError(null);
+    setFile(incoming);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    acceptFile(e.dataTransfer.files?.[0]);
+  };
+
+  /** A scan only counts as a prescription if it yielded a name or medications. */
+  const looksLikePrescription = (data: any) => {
+    if (!data || typeof data !== "object") return false;
+    const hasName =
+      typeof data.patient_name === "string" && data.patient_name.trim().length > 0;
+    const hasMeds = Array.isArray(data.medications) && data.medications.length > 0;
+    return hasName || hasMeds;
+  };
+
+  // --- Editable review form handlers ---
+  const updateField = (field: "patient_name" | "date", value: string) => {
+    setSaveSuccess(false);
+    setEditData((prev) => (prev ? { ...prev, [field]: value } : prev));
+  };
+
+  const updateMedication = (
+    idx: number,
+    field: keyof EditableMedication,
+    value: string
+  ) => {
+    setSaveSuccess(false);
+    setEditData((prev) =>
+      prev
+        ? {
+            ...prev,
+            medications: prev.medications.map((m, i) =>
+              i === idx ? { ...m, [field]: value } : m
+            ),
+          }
+        : prev
+    );
+  };
+
+  const addMedication = () => {
+    setSaveSuccess(false);
+    setEditData((prev) =>
+      prev
+        ? {
+            ...prev,
+            medications: [
+              ...prev.medications,
+              { medicine_name: "", dosage: "", frequency: "" },
+            ],
+          }
+        : prev
+    );
+  };
+
+  const removeMedication = (idx: number) => {
+    setSaveSuccess(false);
+    setEditData((prev) =>
+      prev
+        ? { ...prev, medications: prev.medications.filter((_, i) => i !== idx) }
+        : prev
+    );
+  };
+
+  const handleSaveRecord = async () => {
+    if (!editData || !doctorId) return;
+
+    // Drop fully-empty medication rows; keep anything the doctor typed.
+    const meds = editData.medications.filter(
+      (m) =>
+        m.medicine_name.trim() || m.dosage.trim() || m.frequency.trim()
+    );
+
+    if (!editData.patient_name.trim() && meds.length === 0) {
+      setError("Add at least a patient name or one medication before saving.");
+      return;
+    }
+
+    setError(null);
+    setIsSaving(true);
+
+    const payload = {
+      patient_name: editData.patient_name.trim() || null,
+      prescription_date: editData.date.trim() || null,
+      medications: meds,
+    };
+
+    // Colab already inserted the row and returned its id, so manual edits
+    // UPDATE that same row — no duplicate records.
+    const res = editData.id
+      ? await supabase
+          .from("prescriptions")
+          .update(payload)
+          .eq("id", editData.id)
+          .eq("doctor_id", doctorId)
+      : await supabase
+          .from("prescriptions")
+          .insert({ ...payload, doctor_id: doctorId });
+
+    setIsSaving(false);
+
+    if (res.error) {
+      setError(res.error.message || "Could not save the record.");
+      return;
+    }
+
+    setSaveSuccess(true);
+    fetchPatients({ silent: true });
+  };
+
   const handleScan = async () => {
     if (!file) {
       setError("Please select a prescription image first.");
@@ -218,7 +367,8 @@ export function PatientManagement() {
 
     setError(null);
     setIsLoading(true);
-    setScannedData(null);
+    setEditData(null);
+    setSaveSuccess(false);
 
     try {
       const { data: configData, error: configError } = await supabase
@@ -231,6 +381,10 @@ export function PatientManagement() {
         throw new Error("The AI processing server is currently offline. Please start the Colab notebook.");
       }
 
+      // The stored ngrok URL can be stale even when non-empty (Colab restarted
+      // and issued a new tunnel). Surface that as a clear, actionable message
+      // instead of the browser's cryptic "Failed to fetch".
+
       let apiUrl = configData.ngrok_url;
       let base = apiUrl.trim().replace(/\/+$/, "");
       let cleanUrl = base + (base.endsWith("/scan") ? "/" : "/scan/");
@@ -239,17 +393,47 @@ export function PatientManagement() {
       formData.append("file", file);
       formData.append("doctor_id", doctorId); // ✨ NEW: Send the doctor ID to FastAPI
 
-      const response = await fetch(cleanUrl, {
-        method: "POST",
-        body: formData,
-      });
+      let response: Response;
+      try {
+        response = await fetch(cleanUrl, {
+          method: "POST",
+          body: formData,
+        });
+      } catch {
+        // fetch() throws (not !response.ok) when the tunnel is unreachable.
+        throw new Error(
+          "Couldn't reach the AI scanning server. The Colab notebook may be stopped or its tunnel URL is out of date — restart it and refresh the saved URL."
+        );
+      }
 
       if (!response.ok) throw new Error("AI server failed to process the document.");
 
       const result = await response.json();
-      setScannedData(result.data);
-      
-      fetchPatients(); 
+      const data = result?.data;
+
+      if (!looksLikePrescription(data)) {
+        // A non-prescription image (or an unreadable one) comes back with no
+        // patient name and no medications — don't present it as a success.
+        throw new Error(
+          "We couldn't read a prescription from that image. Please upload a clear photo or scan of a prescription with the patient name and medications visible."
+        );
+      }
+
+      setSaveSuccess(false);
+      setEditData({
+        id: typeof data.id === "string" ? data.id : null,
+        patient_name: data.patient_name ?? "",
+        date: data.date ?? "",
+        medications: Array.isArray(data.medications)
+          ? data.medications.map((m: any) => ({
+              medicine_name: m?.medicine_name ?? "",
+              dosage: m?.dosage ?? "",
+              frequency: m?.frequency ?? "",
+            }))
+          : [],
+      });
+
+      fetchPatients();
 
     } catch (err: any) {
       console.error(err);
@@ -376,13 +560,35 @@ export function PatientManagement() {
                   <div className="grid gap-3">
                     <div className="grid gap-1.5">
                       <Label htmlFor="file" className="text-xs font-medium">Prescription Image</Label>
-                      <Input
-                        id="file"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setFile(e.target.files?.[0] || null)}
-                        className="h-8 text-xs cursor-pointer bg-white dark:bg-[hsl(var(--surface-elevated))] dark:text-neutral-100 dark:border-white/10"
-                      />
+                      <label
+                        htmlFor="file"
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 text-center cursor-pointer transition-colors ${
+                          isDragging
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                            : "border-blue-200 dark:border-blue-800/50 bg-white dark:bg-[hsl(var(--surface-elevated))] hover:border-blue-400 dark:hover:border-blue-700"
+                        }`}
+                      >
+                        <UploadCloud className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+                        {file ? (
+                          <span className="text-xs font-medium text-blue-700 dark:text-blue-300 break-all">
+                            {file.name}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-500 dark:text-neutral-400">
+                            <span className="font-medium text-blue-600 dark:text-blue-400">Click to upload</span> or drag &amp; drop a prescription image
+                          </span>
+                        )}
+                        <Input
+                          id="file"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => acceptFile(e.target.files?.[0])}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
 
                     <Button
@@ -407,47 +613,117 @@ export function PatientManagement() {
                   </div>
                 </div>
 
-                {scannedData && (
+                {editData && (
                   <div className="mt-2 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {(!editData.patient_name.trim() ||
+                      !editData.date.trim() ||
+                      editData.medications.length === 0) && (
+                      <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-md px-3 py-2">
+                        Some details couldn&apos;t be read from the image. Review the fields below and fill in anything missing before saving.
+                      </p>
+                    )}
+
                     <div className="grid grid-cols-2 gap-4 p-3 bg-green-50 dark:bg-emerald-900/30 rounded-md border border-green-200 dark:border-emerald-800/40">
-                      <div>
-                        <Label className="text-[10px] uppercase text-green-700 dark:text-emerald-300">Patient Name</Label>
-                        <p className="font-medium text-sm text-green-900 dark:text-emerald-100">{scannedData.patient_name || "Not found"}</p>
+                      <div className="grid gap-1">
+                        <Label htmlFor="rx-name" className="text-[10px] uppercase text-green-700 dark:text-emerald-300">Patient Name</Label>
+                        <Input
+                          id="rx-name"
+                          value={editData.patient_name}
+                          onChange={(e) => updateField("patient_name", e.target.value)}
+                          placeholder="Enter patient name"
+                          className="h-8 text-sm bg-white dark:bg-[hsl(var(--surface-elevated))] dark:text-neutral-100 dark:border-white/10"
+                        />
                       </div>
-                      <div>
-                        <Label className="text-[10px] uppercase text-green-700 dark:text-emerald-300">Date</Label>
-                        <p className="font-medium text-sm text-green-900 dark:text-emerald-100">{scannedData.date || "Not found"}</p>
+                      <div className="grid gap-1">
+                        <Label htmlFor="rx-date" className="text-[10px] uppercase text-green-700 dark:text-emerald-300">Date</Label>
+                        <Input
+                          id="rx-date"
+                          value={editData.date}
+                          onChange={(e) => updateField("date", e.target.value)}
+                          placeholder="e.g. 2026-06-21"
+                          className="h-8 text-sm bg-white dark:bg-[hsl(var(--surface-elevated))] dark:text-neutral-100 dark:border-white/10"
+                        />
                       </div>
                     </div>
 
                     <div>
-                      <Label className="text-sm font-semibold mb-2 block dark:text-neutral-100">Extracted Medications</Label>
-                      <div className="border dark:border-white/10 rounded-md overflow-hidden">
-                        <table className="w-full text-sm text-left">
-                          <thead className="bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-neutral-300 text-xs uppercase">
-                            <tr>
-                              <th className="px-4 py-2">Medicine</th>
-                              <th className="px-4 py-2">Dosage</th>
-                              <th className="px-4 py-2">Freq</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y dark:divide-white/10">
-                            {scannedData.medications && Array.isArray(scannedData.medications) ? (
-                              scannedData.medications.map((med: any, idx: number) => (
-                                <tr key={idx} className="bg-white dark:bg-[hsl(var(--surface-card))]">
-                                  <td className="px-4 py-2 font-medium dark:text-neutral-100">{med.medicine_name || "-"}</td>
-                                  <td className="px-4 py-2 dark:text-neutral-300">{med.dosage || "-"}</td>
-                                  <td className="px-4 py-2 dark:text-neutral-300">{med.frequency || "-"}</td>
-                                </tr>
-                              ))
-                            ) : (
-                              <tr>
-                                <td colSpan={3} className="px-4 py-4 text-center text-gray-500 dark:text-neutral-400">No medications found.</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-sm font-semibold block dark:text-neutral-100">Medications</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addMedication}
+                          className="h-7 px-2 text-xs border border-[#EDEDED] dark:border-white/10 dark:text-neutral-200 dark:bg-[hsl(var(--surface-elevated))] flex items-center gap-1"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Add medication
+                        </Button>
                       </div>
+
+                      {editData.medications.length === 0 ? (
+                        <p className="text-xs text-gray-500 dark:text-neutral-400 border border-dashed dark:border-white/10 rounded-md px-3 py-4 text-center">
+                          No medications detected. Click &quot;Add medication&quot; to enter them manually.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {editData.medications.map((med, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <Input
+                                value={med.medicine_name}
+                                onChange={(e) => updateMedication(idx, "medicine_name", e.target.value)}
+                                placeholder="Medicine"
+                                className="h-8 text-sm flex-1 bg-white dark:bg-[hsl(var(--surface-elevated))] dark:text-neutral-100 dark:border-white/10"
+                              />
+                              <Input
+                                value={med.dosage}
+                                onChange={(e) => updateMedication(idx, "dosage", e.target.value)}
+                                placeholder="Dosage"
+                                className="h-8 text-sm w-24 bg-white dark:bg-[hsl(var(--surface-elevated))] dark:text-neutral-100 dark:border-white/10"
+                              />
+                              <Input
+                                value={med.frequency}
+                                onChange={(e) => updateMedication(idx, "frequency", e.target.value)}
+                                placeholder="Freq"
+                                className="h-8 text-sm w-24 bg-white dark:bg-[hsl(var(--surface-elevated))] dark:text-neutral-100 dark:border-white/10"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeMedication(idx)}
+                                aria-label="Remove medication"
+                                className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 shrink-0"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-1">
+                      <Button
+                        type="button"
+                        onClick={handleSaveRecord}
+                        disabled={isSaving}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white h-9"
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save changes"
+                        )}
+                      </Button>
+                      {saveSuccess && (
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                          Saved ✓
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
