@@ -28,6 +28,32 @@ type EditableMedication = {
   frequency: string;
 };
 
+/**
+ * Shrink a prescription photo in the browser before upload so the base64 image
+ * stays under the vision model's size limit. Falls back to the original file if
+ * anything goes wrong (e.g. an unusual format the canvas can't decode).
+ */
+async function downscaleImage(file: File, maxDim = 1600): Promise<Blob> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.85),
+    );
+    return blob ?? file;
+  } catch {
+    return file;
+  }
+}
+
 type EditableScan = {
   id: string | null;
   patient_name: string;
@@ -371,42 +397,26 @@ export function PatientManagement() {
     setSaveSuccess(false);
 
     try {
-      const { data: configData, error: configError } = await supabase
-        .from("system_config")
-        .select("ngrok_url")
-        .eq("id", 1)
-        .single();
-
-      if (configError || !configData?.ngrok_url || configData.ngrok_url === 'waiting_for_colab') {
-        throw new Error("The AI processing server is currently offline. Please start the Colab notebook.");
-      }
-
-      // The stored ngrok URL can be stale even when non-empty (Colab restarted
-      // and issued a new tunnel). Surface that as a clear, actionable message
-      // instead of the browser's cryptic "Failed to fetch".
-
-      let apiUrl = configData.ngrok_url;
-      let base = apiUrl.trim().replace(/\/+$/, "");
-      let cleanUrl = base + (base.endsWith("/scan") ? "/" : "/scan/");
-
+      // Scanning runs on the same-origin /api/scan route, which calls Groq's
+      // vision model directly — no Python backend, no Colab, no ngrok. Shrink
+      // the photo first so it stays under the model's image-size limit.
+      const image = await downscaleImage(file);
       const formData = new FormData();
-      formData.append("file", file);
-      formData.append("doctor_id", doctorId); // ✨ NEW: Send the doctor ID to FastAPI
+      formData.append("file", image, "prescription.jpg");
+      formData.append("doctor_id", doctorId);
 
-      let response: Response;
-      try {
-        response = await fetch(cleanUrl, {
-          method: "POST",
-          body: formData,
-        });
-      } catch {
-        // fetch() throws (not !response.ok) when the tunnel is unreachable.
+      const response = await fetch("/api/scan", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
         throw new Error(
-          "Couldn't reach the AI scanning server. The Colab notebook may be stopped or its tunnel URL is out of date — restart it and refresh the saved URL."
+          body.error ||
+            "The AI scanning server couldn't process the document. Please try again."
         );
       }
-
-      if (!response.ok) throw new Error("AI server failed to process the document.");
 
       const result = await response.json();
       const data = result?.data;
