@@ -88,8 +88,30 @@ export async function POST(request: NextRequest) {
     }
 
     if (!response.ok) {
+      // Surface Colab's actual error so failures are diagnosable instead of
+      // a generic "failed to process". FastAPI errors come back as
+      // { detail: ... }; fall back to raw text for anything else.
+      const rawBody = await response.text().catch(() => "");
+      let detail = rawBody;
+      try {
+        const parsed = JSON.parse(rawBody);
+        detail =
+          typeof parsed?.detail === "string"
+            ? parsed.detail
+            : JSON.stringify(parsed?.detail ?? parsed);
+      } catch {
+        // not JSON — keep rawBody
+      }
+      console.error(
+        `Prescription scan: Colab returned ${response.status}:`,
+        detail?.slice?.(0, 1000) ?? detail,
+      );
       return NextResponse.json(
-        { error: "AI server failed to process the document." },
+        {
+          error:
+            `The AI server couldn't process the document (HTTP ${response.status})` +
+            (detail ? `: ${String(detail).slice(0, 300)}` : "."),
+        },
         { status: response.status },
       );
     }
