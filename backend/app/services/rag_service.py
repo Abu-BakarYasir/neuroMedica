@@ -555,3 +555,78 @@ class RAGService:
             "confidence": confidence,
             "disclaimer": disclaimer,
         }
+
+    async def explore_symptoms_stream(
+        self, symptoms: str, top_k: int = 10
+    ) -> AsyncIterator[dict]:
+        """Streaming variant of explore_symptoms(). Emits the citations +
+        confidence as soon as retrieval/CRAG finishes — so the UI can render
+        source cards while Claude is still composing the differential — then
+        emits the structured differential, then a terminal event.
+
+        Event envelope (one dict per yield):
+            {"type": "meta", "citations": [...], "confidence": ..., "disclaimer": ...}
+            {"type": "result", "symptoms": ..., "differentials": [...], "summary": ...,
+             "recommended_workup": [...], "structured": ...}
+            {"type": "done"}
+        """
+        question = (
+            "Differential diagnosis for a patient presenting with: " + symptoms
+        )
+        # Steps 0-4: shared retrieval pipeline (same as explore_symptoms/query).
+        context_chunks, confidence, _intent = await self._retrieve_context(
+            question, top_k=top_k
+        )
+
+        citations = (
+            self._generator._build_citations(context_chunks)
+            if hasattr(self._generator, "_build_citations") else []
+        )
+        disclaimer = (
+            "This information is for educational purposes only. Always consult "
+            "qualified healthcare professionals for clinical decisions."
+        )
+
+        # Emit citations + confidence immediately — the differential generation
+        # below is the slow part (a single Claude call), so the frontend gets
+        # the source cards seconds before the differential lands.
+        yield {
+            "type": "meta",
+            "citations": [c.model_dump() for c in citations],
+            "confidence": confidence,
+            "disclaimer": disclaimer,
+        }
+
+        # Step 5: structured differential generation (offloaded so the blocking
+        # LLM call doesn't stall the event loop).
+        if hasattr(self._generator, "generate_differential"):
+            payload = await asyncio.to_thread(
+                lambda: self._generator.generate_differential(
+                    symptoms=symptoms,
+                    context_chunks=context_chunks,
+                    citations=citations,
+                    confidence=confidence,
+                )
+            )
+        else:
+            # Groq fallback: no structured path — surface a prose answer.
+            result = await asyncio.to_thread(
+                lambda: self._generator.generate(
+                    query=question, context_chunks=context_chunks,
+                    confidence=confidence, query_intent="diagnostic",
+                )
+            )
+            payload = {
+                "structured": False, "summary": result.answer,
+                "differentials": [], "recommended_workup": [],
+            }
+
+        yield {
+            "type": "result",
+            "symptoms": symptoms,
+            "differentials": payload.get("differentials", []),
+            "summary": payload.get("summary", ""),
+            "recommended_workup": payload.get("recommended_workup", []),
+            "structured": payload.get("structured", True),
+        }
+        yield {"type": "done"}
