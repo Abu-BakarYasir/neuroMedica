@@ -7,6 +7,23 @@ import type { CitationItem } from "@/lib/chatbot/types";
 import { citationLink, citationSourceMeta } from "@/lib/chatbot/citations";
 
 /**
+ * Strip the model's self-referential "meta" notes that hurt the reading
+ * experience — the ⚠️ "Important caveat" / "Retrieval Note" blocks that talk
+ * about the retrieval system instead of the medicine. Runs per top-level block
+ * (split on blank lines) and drops any block that opens with one of those
+ * markers, however it's decorated (blockquote `>`, bold `**`, leading emoji).
+ */
+function stripMetaNotes(md: string): string {
+  const META_OPENER =
+    /^\s*>?\s*\**\s*(?:⚠️|⚠|❗|ℹ️|📌|🔎)?\s*\**\s*(important caveat|retrieval note|caveat|note to (?:the )?(?:reader|user)|coverage note)\b/i;
+  return md
+    .split(/\n{2,}/)
+    .filter((block) => !META_OPENER.test(block))
+    .join("\n\n")
+    .trim();
+}
+
+/**
  * Convert bare `[12]` citation tokens into markdown links (`[12](#cite-12)`)
  * so react-markdown hands them to our <a> renderer, which swaps in a real
  * source link + badge. Code spans/fences are left untouched.
@@ -139,7 +156,7 @@ export function MarkdownMessage({
   return (
     <div className="break-words">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-        {linkifyCitations(content)}
+        {linkifyCitations(stripMetaNotes(content))}
       </ReactMarkdown>
     </div>
   );

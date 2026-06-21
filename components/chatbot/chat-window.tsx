@@ -88,6 +88,12 @@ export function ChatWindow({
     setFollowBottom(distanceFromBottom < 80);
   };
 
+  // True once the streaming assistant placeholder has been appended — that
+  // message shows its own single-avatar indicator, so the standalone spinner
+  // must stand down to avoid a duplicate avatar.
+  const lastMessage = messages[messages.length - 1];
+  const awaitingAssistant = lastMessage?.role === "assistant";
+
   const suggestionPrompts = [
     "What are the latest guidelines for hypertension management?",
     "Summarize evidence for SGLT2 inhibitors in heart failure.",
@@ -157,22 +163,28 @@ export function ChatWindow({
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
-              {isLoading && (
+              {/*
+                The streaming assistant placeholder (an empty assistant message)
+                renders its own single-avatar "thinking" indicator. Only show a
+                standalone spinner for the brief window before that placeholder
+                exists — otherwise two avatars stack up (the reported bug).
+              */}
+              {isLoading && !awaitingAssistant && (
                 <div className="flex gap-3 py-4">
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-neuro-primary to-neuro-primary-dark flex items-center justify-center">
                     <Sparkles className="w-3.5 h-3.5 text-white" />
                   </div>
                   <div className="flex items-center gap-1 pt-2">
                     <span
-                      className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce"
+                      className="w-1.5 h-1.5 bg-neuro-primary/60 rounded-full animate-bounce"
                       style={{ animationDelay: "0ms" }}
                     />
                     <span
-                      className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce"
+                      className="w-1.5 h-1.5 bg-neuro-primary/60 rounded-full animate-bounce"
                       style={{ animationDelay: "150ms" }}
                     />
                     <span
-                      className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce"
+                      className="w-1.5 h-1.5 bg-neuro-primary/60 rounded-full animate-bounce"
                       style={{ animationDelay: "300ms" }}
                     />
                   </div>
