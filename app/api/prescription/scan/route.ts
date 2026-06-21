@@ -27,15 +27,18 @@ function parseJson(text: string): Record<string, unknown> {
 }
 
 /** Coerce the model output into the exact shape the dashboard expects. */
-function normalize(data: Record<string, any>) {
+function normalize(data: Record<string, unknown>) {
   const medsIn = Array.isArray(data?.medications) ? data.medications : [];
   const medications = medsIn
-    .map((m: any) => ({
-      medicine_name: String(m?.medicine_name ?? m?.name ?? "").trim(),
-      dosage: String(m?.dosage ?? "").trim(),
-      frequency: String(m?.frequency ?? "").trim(),
-    }))
-    .filter((m: { medicine_name: string }) => m.medicine_name.length > 0);
+    .map((entry: unknown) => {
+      const m = (entry ?? {}) as Record<string, unknown>;
+      return {
+        medicine_name: String(m.medicine_name ?? m.name ?? "").trim(),
+        dosage: String(m.dosage ?? "").trim(),
+        frequency: String(m.frequency ?? "").trim(),
+      };
+    })
+    .filter((m) => m.medicine_name.length > 0);
   return {
     patient_name: String(data?.patient_name ?? "").trim(),
     date: String(data?.date ?? "").trim(),
@@ -44,9 +47,10 @@ function normalize(data: Record<string, any>) {
 }
 
 /**
- * Prescription scanning. Calls Groq's vision model directly (no Python backend),
- * extracts patient name / date / medications, and returns them for review.
- * Does NOT write to the DB — the dashboard inserts the row after the doctor edits.
+ * Prescription scanning. Calls Groq's vision model directly (no Colab, no
+ * ngrok, no Python backend), extracts patient name / date / medications, and
+ * returns them for review. Does NOT write to the DB — the dashboard inserts
+ * the row after the doctor edits the extracted fields.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -125,8 +129,7 @@ export async function POST(request: NextRequest) {
     }
 
     const completion = await groqRes.json();
-    const content: string =
-      completion?.choices?.[0]?.message?.content ?? "";
+    const content: string = completion?.choices?.[0]?.message?.content ?? "";
 
     let parsed: Record<string, unknown>;
     try {
@@ -139,9 +142,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data: normalize(parsed as Record<string, any>) });
+    return NextResponse.json({ data: normalize(parsed) });
   } catch (error) {
-    console.error("Scan route error:", error);
+    console.error("Prescription scan route error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 },

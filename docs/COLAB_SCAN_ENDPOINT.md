@@ -1,5 +1,68 @@
 # Colab `/scan` endpoint — return-only change
 
+---
+
+## ⚠️ Fixing "Couldn't reach the AI scanning server" permanently
+
+That error means the browser's `fetch()` could not reach the URL in
+`system_config.ngrok_url`. There are three causes — only the last is unavoidable:
+
+| Cause | Permanent fix |
+|---|---|
+| ngrok free-tier serves an HTML warning page / CORS blocks the browser response | **Done — the scan now goes through a server proxy** (`app/api/prescription/scan/route.ts`). The browser calls our own same-origin route; the route forwards to ngrok server-side with `ngrok-skip-browser-warning: true`. No browser CORS, no interstitial. |
+| The stored URL goes stale every time Colab/ngrok restarts | **Auto-publish cell below** — write the live URL to `system_config` on every start. |
+| The Colab runtime is simply stopped (idle timeout, closed tab) | Nothing in code can fix a powered-off server — the runtime must be running. Keep the notebook tab open; consider Colab Pro to reduce idle disconnects. |
+
+### 1. CORS (now optional)
+
+Because the browser no longer calls the tunnel directly — it calls the Next.js proxy route,
+which calls ngrok server-side — **CORS on the Colab FastAPI is no longer required**. You can
+leave it in for direct testing convenience, but the app no longer depends on it. For
+reference, to allow direct browser calls you would add, right after `app = FastAPI()`:
+
+```python
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],          # or lock to your app's origin(s)
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+### 2. Auto-publish the ngrok URL to Supabase on every start
+
+Run this **in the same cell that starts the tunnel**, so the stored URL is never stale.
+This is the fix for the recurring "URL is out of date" problem:
+
+```python
+from pyngrok import ngrok
+from supabase import create_client
+
+# Use the SERVICE-ROLE key here — this UPDATE bypasses RLS.
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+public_url = ngrok.connect(8000).public_url      # e.g. https://xxxx.ngrok-free.app
+print("Public URL:", public_url)
+
+# Overwrite the single config row (id = 1) with the live tunnel URL.
+supabase.table("system_config").update(
+    {"ngrok_url": public_url}
+).eq("id", 1).execute()
+
+print("Published to system_config.ngrok_url")
+```
+
+After this, restarting Colab/ngrok no longer requires touching Supabase by hand — the new
+URL is pushed automatically, and the frontend reads the fresh value on the next scan.
+
+> Tip: to verify the tunnel from your own machine after it starts, run
+> `curl -i -H "ngrok-skip-browser-warning: true" https://<url>/docs`. A FastAPI docs page
+> means the tunnel + CORS are healthy; a hang/refusal means the runtime is down.
+
+---
+
 ## Context
 
 The "Scan prescription" feature (`components/doctors/patient-management.tsx`) does **not**

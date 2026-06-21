@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { patientManagementContent } from "@/lib/doctor-content";
-import { Plus, UploadCloud, Loader2, FileText, Search, User, Trash2, UserPlus } from "lucide-react";
+import { Plus, UploadCloud, Loader2, FileText, Search, User, Trash2, UserPlus, Check } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 
@@ -61,6 +61,15 @@ type EditableScan = {
   medications: EditableMedication[];
 };
 
+/** Friendly progress labels shown while the AI processes the upload. */
+const SCAN_STAGES = [
+  "Uploading prescription…",
+  "Reading the document…",
+  "Extracting patient details…",
+  "Identifying medications…",
+  "Finalizing results…",
+];
+
 function TrendIcon({ trend }: { trend: "up" | "down" | "neutral" }) {
   const iconMap = {
     up: "/assets/icons/green.svg",
@@ -86,6 +95,8 @@ export function PatientManagement() {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [scanStage, setScanStage] = useState(0);
+  const [scanOpen, setScanOpen] = useState(false);
   const [editData, setEditData] = useState<EditableScan | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -120,6 +131,26 @@ export function PatientManagement() {
     };
     fetchUser();
   }, [supabase]);
+
+  /** Wipe every scan-dialog field so a reopened dialog always starts blank. */
+  const resetScanForm = useCallback(() => {
+    setFile(null);
+    setEditData(null);
+    setError(null);
+    setSaveSuccess(false);
+    setScanStage(0);
+  }, []);
+
+  // Advance the friendly progress labels while a scan is in flight.
+  useEffect(() => {
+    if (!isLoading) return;
+    setScanStage(0);
+    const interval = setInterval(() => {
+      // Hold on the last stage until the request actually resolves.
+      setScanStage((s) => Math.min(s + 1, SCAN_STAGES.length - 1));
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   const fetchPatients = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -377,6 +408,14 @@ export function PatientManagement() {
 
     setSaveSuccess(true);
     fetchPatients({ silent: true });
+
+    // Briefly show "Saved ✓", then close the dialog and wipe the form so the
+    // next time the doctor opens "Scan prescription" it starts completely blank.
+    // (Radix's onOpenChange doesn't fire on a programmatic close, so reset here.)
+    setTimeout(() => {
+      setScanOpen(false);
+      resetScanForm();
+    }, 900);
   };
 
   const handleScan = async () => {
@@ -397,28 +436,27 @@ export function PatientManagement() {
     setSaveSuccess(false);
 
     try {
-      // Scanning runs on the same-origin /api/scan route, which calls Groq's
-      // vision model directly — no Python backend, no Colab, no ngrok. Shrink
-      // the photo first so it stays under the model's image-size limit.
+      // Scanning runs through our own server route (/api/prescription/scan),
+      // which calls Groq's vision model directly — no Colab, no ngrok. Shrink
+      // the photo first so the image stays under the model's size limit.
       const image = await downscaleImage(file);
       const formData = new FormData();
       formData.append("file", image, "prescription.jpg");
       formData.append("doctor_id", doctorId);
 
-      const response = await fetch("/api/scan", {
+      const response = await fetch("/api/prescription/scan", {
         method: "POST",
         body: formData,
       });
 
+      const result = await response.json().catch(() => null);
+
       if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
         throw new Error(
-          body.error ||
-            "The AI scanning server couldn't process the document. Please try again."
+          result?.error || "AI server failed to process the document."
         );
       }
 
-      const result = await response.json();
       const data = result?.data;
 
       if (!looksLikePrescription(data)) {
@@ -545,7 +583,15 @@ export function PatientManagement() {
             }
           />
 
-          <Dialog>
+          <Dialog
+            open={scanOpen}
+            onOpenChange={(open) => {
+              setScanOpen(open);
+              // Always start fresh — clear any data from the previous scan
+              // whenever the dialog opens or closes.
+              resetScanForm();
+            }}
+          >
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 px-3 text-sm border border-[#EDEDED] dark:border-white/10 text-[#212121] dark:text-neutral-200 bg-white dark:bg-[hsl(var(--surface-elevated))] hover:bg-gray-50 dark:hover:bg-white/10 rounded-[10px] flex items-center gap-2 shadow-sm">
                 <Plus className="h-4 w-4"/>
@@ -609,7 +655,7 @@ export function PatientManagement() {
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                          Processing Document...
+                          {SCAN_STAGES[scanStage]}
                         </>
                       ) : (
                         <>
@@ -618,6 +664,32 @@ export function PatientManagement() {
                         </>
                       )}
                     </Button>
+
+                    {isLoading && (
+                      <div className="mt-2 space-y-1.5">
+                        {SCAN_STAGES.map((label, i) => (
+                          <div
+                            key={label}
+                            className={`flex items-center gap-2 text-xs transition-colors ${
+                              i < scanStage
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : i === scanStage
+                                ? "text-blue-700 dark:text-blue-300 font-medium"
+                                : "text-gray-400 dark:text-neutral-500"
+                            }`}
+                          >
+                            {i < scanStage ? (
+                              <Check className="h-3.5 w-3.5 shrink-0" />
+                            ) : i === scanStage ? (
+                              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                            ) : (
+                              <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-current opacity-40" />
+                            )}
+                            {label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {error && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{error}</p>}
                   </div>
