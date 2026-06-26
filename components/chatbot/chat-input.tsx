@@ -38,6 +38,11 @@ interface ChatInputProps {
    * makes repeated picks of the same text re-trigger the fill.
    */
   prefill?: { text: string; nonce: number };
+  /**
+   * Show the attach-context menu (patient / prescription / file). Disabled for
+   * logged-out visitors, who have no records to attach.
+   */
+  showAttachments?: boolean;
 }
 
 export function ChatInput({
@@ -47,6 +52,7 @@ export function ChatInput({
   useRag = false,
   onUseRagChange,
   prefill,
+  showAttachments = true,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -162,7 +168,7 @@ export function ChatInput({
   // Typing "/patient" (the slash command) opens the patient picker and clears
   // the trigger token so it doesn't get sent as part of the message.
   const handleMessageChange = (value: string) => {
-    if (/^\/patients?\s*$/i.test(value)) {
+    if (showAttachments && /^\/patients?\s*$/i.test(value)) {
       setMessage("");
       setAttachMenuOpen(false);
       setPatientPickerOpen(true);
@@ -218,6 +224,7 @@ export function ChatInput({
         )}
       >
         {/* Attach button + dropdown */}
+        {showAttachments && (
         <div className="relative shrink-0" ref={attachMenuRef}>
           <button
             type="button"
@@ -296,6 +303,7 @@ export function ChatInput({
             onChange={handleFilesSelected}
           />
         </div>
+        )}
 
         <textarea
           ref={textareaRef}
@@ -364,19 +372,23 @@ export function ChatInput({
         </p>
       </div>
 
-      <PrescriptionPicker
-        open={prescriptionPickerOpen}
-        onOpenChange={setPrescriptionPickerOpen}
-        alreadyAttachedIds={attachedPrescriptionIds}
-        onSelect={(att) => setAttachments((prev) => [...prev, att])}
-      />
+      {showAttachments && (
+        <>
+          <PrescriptionPicker
+            open={prescriptionPickerOpen}
+            onOpenChange={setPrescriptionPickerOpen}
+            alreadyAttachedIds={attachedPrescriptionIds}
+            onSelect={(att) => setAttachments((prev) => [...prev, att])}
+          />
 
-      <PatientPicker
-        open={patientPickerOpen}
-        onOpenChange={setPatientPickerOpen}
-        alreadyAttachedIds={attachedPatientIds}
-        onSelect={(att) => setAttachments((prev) => [...prev, att])}
-      />
+          <PatientPicker
+            open={patientPickerOpen}
+            onOpenChange={setPatientPickerOpen}
+            alreadyAttachedIds={attachedPatientIds}
+            onSelect={(att) => setAttachments((prev) => [...prev, att])}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -398,10 +410,20 @@ function AttachmentChip({
         <User className="w-3 h-3 shrink-0" />
         <span className="text-[11px] font-medium truncate">
           Patient · {attachment.name}
-          {attachment.prescriptionCount > 0 && (
+          {(attachment.prescriptionCount > 0 || attachment.reports.length > 0) && (
             <span className="text-neuro-primary/70 font-normal">
-              {" "}
-              ({attachment.prescriptionCount} Rx)
+              {" ("}
+              {[
+                attachment.prescriptionCount > 0
+                  ? `${attachment.prescriptionCount} Rx`
+                  : null,
+                attachment.reports.length > 0
+                  ? `${attachment.reports.length} report${attachment.reports.length === 1 ? "" : "s"}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+              {")"}
             </span>
           )}
         </span>

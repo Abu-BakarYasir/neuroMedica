@@ -6,17 +6,27 @@ import { ChatInput } from "./chat-input";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sendMessage } from "@/lib/chatbot/api-client";
+import { answerGuestMessage } from "@/lib/chatbot/guest";
 import type { Message } from "@/lib/chatbot/types";
 
 interface ChatWindowMiniProps {
   onClose: () => void;
+  /**
+   * When false (logged-out landing-page visitor) the window answers general
+   * product questions locally and gates clinical questions behind sign-in,
+   * instead of calling the auth-only backend.
+   */
+  isAuthenticated?: boolean;
 }
 
 /**
  * Lightweight self-contained chat window for the floating widget.
  * Messages are ephemeral (not persisted to DB).
  */
-export function ChatWindowMini({ onClose }: ChatWindowMiniProps) {
+export function ChatWindowMini({
+  onClose,
+  isAuthenticated = true,
+}: ChatWindowMiniProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [useRag, setUseRag] = useState(false);
@@ -39,6 +49,23 @@ export function ChatWindowMini({ onClose }: ChatWindowMiniProps) {
       };
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
+
+      // Logged-out visitors: answer general product questions locally and ask
+      // them to sign in for anything clinical. Never hits the auth-only backend.
+      if (!isAuthenticated) {
+        const reply = answerGuestMessage(content.trim());
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: reply.content,
+            timestamp: new Date(),
+          },
+        ]);
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const history = messages.map((m) => ({
@@ -79,7 +106,7 @@ export function ChatWindowMini({ onClose }: ChatWindowMiniProps) {
         setIsLoading(false);
       }
     },
-    [messages, isLoading, conversationId, useRag]
+    [messages, isLoading, conversationId, useRag, isAuthenticated]
   );
 
   return (
@@ -111,7 +138,9 @@ export function ChatWindowMini({ onClose }: ChatWindowMiniProps) {
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-6 text-center">
             <p className="text-sm text-gray-500 dark:text-neutral-400">
-              How can I help you today?
+              {isAuthenticated
+                ? "How can I help you today?"
+                : "Ask me about Neuro Medica — what it is, what it does, and how to get started."}
             </p>
           </div>
         ) : (
@@ -142,7 +171,8 @@ export function ChatWindowMini({ onClose }: ChatWindowMiniProps) {
         onSend={handleSend}
         isLoading={isLoading}
         useRag={useRag}
-        onUseRagChange={setUseRag}
+        onUseRagChange={isAuthenticated ? setUseRag : undefined}
+        showAttachments={isAuthenticated}
       />
     </div>
   );

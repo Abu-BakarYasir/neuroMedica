@@ -200,6 +200,6 @@ export const footerContent = {
     { label: "About", href: "#" },
     { label: "Contact", href: "#" },
   ],
-  copyright: "© 2024 Neuro Medica. All rights reserved.",
+  copyright: "© 2026 Neuro Medica. All rights reserved.",
 };
 

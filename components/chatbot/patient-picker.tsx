@@ -14,6 +14,7 @@ import {
   listUnifiedPatients,
   listPrescriptionsByName,
 } from "@/lib/patients/service";
+import { listPatientReportSummaries } from "@/lib/report/service";
 import type { UnifiedPatient } from "@/lib/patients/types";
 import type { PatientAttachment } from "@/lib/chatbot/attachments";
 
@@ -90,8 +91,12 @@ export function PatientPicker({
     setSelectingId(patientId(p));
     setError(null);
     try {
-      // Pull the scanned prescription history so the model gets the full picture.
-      const prescriptions = await listPrescriptionsByName(name);
+      // Pull the patient's full saved history — prescriptions plus every saved
+      // report (ECG, X-ray, Q&A, notes) — so the model has complete context.
+      const [prescriptions, reports] = await Promise.all([
+        listPrescriptionsByName(name),
+        listPatientReportSummaries(patientId(p), name),
+      ]);
       const attachment: PatientAttachment = {
         id: crypto.randomUUID(),
         kind: "patient",
@@ -110,6 +115,7 @@ export function PatientPicker({
           createdAt: rx.created_at,
           medications: rx.medications ?? [],
         })),
+        reports,
       };
       onSelect(attachment);
       onOpenChange(false);

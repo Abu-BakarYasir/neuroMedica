@@ -23,6 +23,22 @@ export interface PatientPrescriptionSummary {
   }>;
 }
 
+/** One captured section of a saved report (ECG, X-ray, Q&A, symptom, note). */
+export interface PatientReportItemSummary {
+  kind: string;
+  title: string;
+  /** Concise human-readable findings for this section. */
+  body: string;
+}
+
+/** A saved report for the patient, summarised for the context block. */
+export interface PatientReportSummary {
+  title: string;
+  createdAt: string;
+  notes: string | null;
+  items: PatientReportItemSummary[];
+}
+
 export interface PatientAttachment {
   id: string;                 // local UI id
   kind: "patient";
@@ -38,6 +54,8 @@ export interface PatientAttachment {
   lastPrescriptionAt: string | null;
   /** Scanned prescription history for this patient (may be empty). */
   prescriptions: PatientPrescriptionSummary[];
+  /** Saved reports for this patient — ECG, X-ray, Q&A, etc. (may be empty). */
+  reports: PatientReportSummary[];
 }
 
 export interface PrescriptionAttachment {
@@ -192,6 +210,19 @@ function formatPatient(p: PatientAttachment): string {
               .join("; ")
           : "(no medications recorded)";
       lines.push(`  ${i + 1}. [${date}] ${meds}`);
+    });
+  }
+
+  if (p.reports.length > 0) {
+    lines.push(`- Saved reports (ECG, X-ray, Q&A, notes):`);
+    p.reports.forEach((rep, i) => {
+      const date = new Date(rep.createdAt).toLocaleDateString();
+      lines.push(`  ${i + 1}. [${date}] ${rep.title || "Untitled report"}`);
+      if (rep.notes) lines.push(`     Notes: ${rep.notes}`);
+      rep.items.forEach((item) => {
+        const label = item.title || item.kind.toUpperCase();
+        lines.push(`     • ${label} (${item.kind}): ${item.body}`);
+      });
     });
   }
 

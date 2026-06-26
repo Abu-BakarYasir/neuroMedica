@@ -1,39 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ChevronUp } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 
 interface ChatbotPreviewWidgetProps {
   onExpand: () => void;
-  isExpanded: boolean;
 }
 
 export function ChatbotPreviewWidget({
   onExpand,
-  isExpanded,
 }: ChatbotPreviewWidgetProps) {
-  const [userName, setUserName] = useState("User");
-  const [cost] = useState(1.0);
-
-  useEffect(() => {
-    const getUserInfo = async () => {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const name =
-          user.user_metadata?.full_name ||
-          user.user_metadata?.name ||
-          user.email?.split("@")[0] ||
-          "User";
-        setUserName(name);
-      }
-    };
-    getUserInfo();
-  }, []);
+  // The preview header identifies the assistant, not the signed-in user.
+  const assistantName = "Neuro Medica AI";
 
   return (
     <div className="w-[380px] bg-white dark:bg-[hsl(var(--surface-card))] rounded-lg shadow-lg border border-gray-200 dark:border-white/10 overflow-hidden">
@@ -54,7 +32,7 @@ export function ChatbotPreviewWidget({
           <div className="flex-1 flex flex-col gap-1.5 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-gray-900 dark:text-neutral-100 truncate">
-                {userName}
+                {assistantName}
               </span>
               <span className="flex-shrink-0 text-[10px] bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-neutral-300 px-1.5 py-0.5 rounded font-medium">
                 AI

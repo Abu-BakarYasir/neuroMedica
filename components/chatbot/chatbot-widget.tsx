@@ -24,7 +24,10 @@ export function ChatbotWidget() {
     checkAuth();
   }, []);
 
-  if (isChecking || !isAuthenticated) {
+  // Wait until we know the auth state, then render for everyone: signed-in
+  // users get the full assistant, logged-out visitors get a product-info
+  // assistant that gates clinical questions behind sign-in.
+  if (isChecking) {
     return null;
   }
 
@@ -50,10 +53,7 @@ export function ChatbotWidget() {
             exit={{ scale: 0, opacity: 0 }}
             className="fixed bottom-6 right-6 z-40"
           >
-            <ChatbotPreviewWidget
-              onExpand={handleExpand}
-              isExpanded={isExpanded}
-            />
+            <ChatbotPreviewWidget onExpand={handleExpand} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -68,7 +68,7 @@ export function ChatbotWidget() {
             className="fixed bottom-6 right-6 z-40 w-[380px]"
           >
             <div className="bg-white dark:bg-[hsl(var(--surface-card))] rounded-t-2xl shadow-2xl border border-gray-200 dark:border-white/10 h-[600px] max-h-[calc(100vh-8rem)] flex flex-col overflow-hidden">
-              <ChatWindowMini onClose={handleClose} />
+              <ChatWindowMini onClose={handleClose} isAuthenticated={isAuthenticated} />
             </div>
           </motion.div>
         )}
