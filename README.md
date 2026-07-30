@@ -373,9 +373,7 @@ The backend ships with a CPU-only Docker image (Torch/TF installed lean) and is 
 
 ---
 
-## License
 
-To be defined by the project owners.
 
 ---
 
